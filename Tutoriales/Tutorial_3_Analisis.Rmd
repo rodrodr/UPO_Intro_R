@@ -1,0 +1,1276 @@
+---
+title: "\\<b>Tutorial 3\\</b>\\<br>Análisis"
+output: learnr::tutorial
+runtime: shiny_prerendered
+---
+
+```{r setup, include=FALSE}
+library(learnr)
+knitr::opts_chunk$set(echo = FALSE, message=FALSE, warning=FALSE)
+library(learnrhash)
+library(sortable)
+
+library(poliscidata)
+
+set.seed(12345)
+w <- world[sample(1:nrow(world), 10),]
+w <- world
+wa <- w[,c("country","gini10","dem_level4","religoin", "spendhealth")]
+wb <- w[,c("country","hdi","pop_urban","lifeex_total", "durable")]
+
+w1 <- w[1:83,]
+w2 <- w[84:167,]
+
+
+d <- poliscidata::states
+
+
+tt <- data.frame(Titanic)
+
+tt <- tt[rep(row.names(tt), tt$Freq), 1:4]
+tt$First_Class <- 0
+tt$First_Class[tt$Class=="1st"] <- 1
+
+tt$Crew <- 0
+tt$Crew[tt$Class=="Crew"] <- 1
+
+
+library(openxlsx)
+
+an <- aov(dem_score14~religoin, data = w)
+
+
+```
+
+## Medidas de Tendencia Central
+
+### ¿Qué es la Tendencia Central?
+
+La tendencia central es una medida que resume la distribución de un conjunto de datos en un solo valor. Las medidas de tendencia central más comunes son la media, la mediana y la moda.
+
+Cuando queremos saber más sobre los estudiantes en clase, por ejemplo, generalmente empleamos algunas señales de información para ayudarnos a comprender un poco mejor quiénes son. La edad es uno de esos tipos de información. Nuestra pregunta es: ¿cuántos años tienen los estudiantes? La composición por sexo es otra: ¿cuántos son mujeres y cuántos son hombres? Sus calificaciones en cursos anteriores también nos ayudan a conocerlos. 
+
+Las medidas de tendencia central son herramientas para resumir datos sobre individuos o grupos que nos permiten comprender un poco mejor quiénes son o cuál es el comportamiento esperado en situaciones concretas.
+
+### Medidas de Tendencia Central en R
+
+Como acabamos de ver, las medidas de tendencia central son la media, la mediana y la moda. Las dos primeras tienen funciones nativas en R para calcularlas, mientras que la tercera es menos utilizada en análisis comunes, por lo que fue descartada desde el principio.
+
+Usaremos un data.frame llamado **d** basado en el data.frame **states** del paquete *polscidata* para ilustrar los conceptos y realizar ejercicios.
+
+
+#### **MEDIA**
+
+La función **mean()** calcula el valor promedio o media de una variable dada. Tiene dos parámetros principales a tener en cuenta: x - la variable de la que deseamos calcular la media; y na.rm - indicando si queremos excluir los valores faltantes en el cálculo o no.
+
+Calculemos la media de la variable *unemploy* (% de desempleo en cada Estado) de nuestro data.frame **d**. Recuerda: es necesario usar el signo de dólar ($) después del nombre del data.frame para referirse a una variable. En este caso, sería d\$unemploy. Así que hagámoslo:
+
+```{r 01_mean_A, exercise=TRUE}
+
+mean(d$unemploy)
+
+```
+
+El paro medio en los 50 Estados de Estados Unidos es del 5.2 (5.188 para ser exactos).
+
+Ahora, repitamos la operación para la variable *relig_import* (importancia de la religión):
+
+```{r 01_mean_B, exercise=TRUE}
+
+mean(d$relig_import)
+
+```
+
+Como puedes ver, el resultado fue NA (No Disponible). Verás este acrónimo cada vez que encuentres datos faltantes en R. Para eliminar los casos faltantes, necesitamos usar *na.rm=TRUE* como parámetro.
+
+```{r 01_mean_C, exercise=TRUE}
+
+mean(d$relig_import, na.rm = TRUE)
+
+```
+
+Ahora, te toca a ti. Calcula la media para las variables *urban* (% de población urbana) y *permit* (% de la población que "Siempre permite" el aborto).
+
+```{r 01_mean_D, exercise=TRUE}
+
+
+```
+
+```{r 01_mean_D-solution}
+
+mean(d$urban)
+
+mean(d$permit, na.rm = TRUE)
+
+```
+
+
+#### **MEDIANA**
+
+La segunda medida es la **mediana**, que separa los valores entre dos grupos con el mismo tamaño. La función es **median()** y tiene los mismos parámetros mencionados para la media: x - la variable de la que deseamos calcular la media; y na.rm - indicando si queremos excluir los valores faltantes en el cálculo o no.
+
+Ahora, en lugar de calcular la media, calculemos la mediana para la variable *unemploy* (% de desempleo en cada Estado) de nuestro data.frame **d**. 
+
+
+```{r 01_median_A, exercise=TRUE}
+
+median(d$unemploy)
+
+```
+
+La tasa de desempleo mediana, la que separa los 50 Estados de Estados Unidos en dos grupos de 25 estados, es 5.25.
+
+Ahora, repitamos la operación para la variable *relig_import* (importancia de la religión):
+
+
+```{r 01_median_B, exercise=TRUE}
+
+median(d$relig_import)
+
+```
+
+Como puedes ver, el resultado fue NA (No Disponible). Al igual que en el ejemplo anterior, necesitamos usar *na.rm=TRUE* como parámetro.
+
+```{r 01_median_C, exercise=TRUE}
+
+median(d$relig_import, na.rm = TRUE)
+
+```
+
+
+De nuevo, te toca. Calcula la mediana para las variables *urban* (% de población urbana) y *permit* (% de la población que "Siempre permite" el aborto).
+
+```{r 01_median_D, exercise=TRUE}
+
+
+```
+
+```{r 01_median_D-solution}
+
+median(d$urban)
+
+median(d$permit, na.rm = TRUE)
+
+```
+
+
+#### **MODA**
+
+La tercera medida es la **moda**. Es el valor más frecuente en los datos. Tiene poco sentido calcular la moda para variables continuas, pero puede proporcionar información general para números enteros (la edad más común en un grupo o el número de veces que un equipo nacional de fútbol ganó la Copa del Mundo ;-) ). No hay una función para calcular la moda como tal en R. Podemos hacerlo usando la función **table()** y simplemente seleccionando el valor más alto.
+
+En el fragmento de código a continuación, creo una función llamada **calcMode()** que:
+
+1. cuenta la frecuencia de cada valor de la variable
+
+2. ordena los valores en orden decreciente y selecciona el primer valor
+
+3. devuelve la Moda y su frecuencia.
+
+Ahora, vamos a usarla para calcular la moda de la variable **gunlaw_rank**.
+
+```{r 01_mode, exercise=TRUE}
+
+# Crea la función para calcular la moda
+calcMode <- function(var){
+
+  # Averigua cuál valor aparece más  
+  tb <-  sort(table(var), decreasing = T)[1]
+  
+  # Informa los resultados
+  paste0("Mode: ", names(tb), " - Frequency: ", tb, " times.")
+
+}
+
+# Calcula la moda para la variable gunlaw_rank
+calcMode(d$gunlaw_rank)
+
+
+```
+
+Esta función también se puede usar para variables categóricas. Repitamos el ejercicio para la variable **cig_tax12_3** (Impuestos sobre los cigarrillos):
+
+```{r 02_mode, exercise=TRUE}
+
+# Crea la función para calcular la moda
+calcMode <- function(var){
+
+  # Averigua cuál valor aparece más  
+  tb <-  sort(table(var), decreasing = T)[1]
+  
+  # Informa los resultados
+  paste0("Mode: ", names(tb), " - Frequency: ", tb, " times.")
+
+}
+
+# Calcula la moda para variable cig_tax12_3
+calcMode(d$cig_tax12_3)
+
+
+```
+
+
+Es tu turno. Copia la función y calcula la moda para la variable **pot_policy** (Leyes de la marihuana):
+
+
+```{r 03_mode, exercise=TRUE}
+
+
+```
+
+```{r 03_mode-solution}
+
+# Crea la función para calcular la moda
+calcMode <- function(var){
+
+  # Averigua cuál valor aparece más  
+  tb <-  sort(table(var), decreasing = T)[1]
+  
+  # Informa los resultados
+  paste0("Mode: ", names(tb), " - Frequency: ", tb, " times.")
+
+}
+
+# Calcula la moda para la variable pot_policy
+calcMode(d$pot_policy)
+
+
+```
+
+
+## Medidas de Dispersión: Dispersión y Varianza
+
+### ¿Qué es la Dispersión y la Varianza?
+
+El video a continuación explica las principales medidas de dispersión: rango, rango intercuartil, varianza y desviación estándar.
+
+![](https://www.youtube.com/watch?v=R4yfNi_8Kqw)
+
+### Medidas de Dispersión en R
+
+
+#### **INTERVALO o RANGO**
+
+La función **range()** calcula el rango para cualquier variable NUMÉRICA dada en un data.frame, y devuelve los valores mínimo y máximo.
+
+
+```{r 01_range, exercise=TRUE}
+
+range(d$urban)
+
+```
+
+Ahora calcula el rango para las variables **prochoice** (% de la población pro-elección) y **permit**.
+
+
+```{r 02_range, exercise=TRUE}
+
+
+```
+
+```{r 02_range-solution}
+
+range(d$prochoice)
+
+# Puesto que permit contiene casos perdidos, 
+# resulta importante usar el parámetro na.rm=TRUE
+range(d$permit, na.rm = TRUE)
+
+```
+
+
+
+
+#### **IQR - Rango Intercuartiles**
+
+Los cuartiles son valores que separan una variable en cuatro grupos iguales con el mismo tamaño. Indican los valores que representan las posiciones del 25% inferior, 50% y 75% de los casos ordenados de menor a mayor. El rango intercuartil selecciona solo los cuartiles que marcan el 50% de las observaciones en el medio, dejando fuera el 25% inferior y el 25% superior. Esto ayuda a incluir los extremos en la evaluación de la dispersión de valores.
+
+Mira este breve video para entender cuartiles, percentiles, deciles, etc...
+![](https://www.youtube.com/watch?v=s6cMpDEzq_4)
+
+La función **IQR()** calcula el rango intercuartil para una variable dada. Resta el segundo cuartil al tercero: Q3-Q2.
+
+El código a continuación calcula el rango intercuartil para la variable *urban*.
+
+
+```{r 01_iqr, exercise=TRUE}
+
+IQR(d$urban)
+
+```
+
+Ahora, repite la operación para la variable **permit**.
+
+```{r 02_iqr, exercise=TRUE}
+
+
+```
+
+
+```{r 02_iqr-solution}
+
+IQR(d$permit,na.rm = TRUE)
+
+```
+
+
+#### **VARIANZA**
+
+Los mismos principios se aplican a la varianza, calculada por la función **var()**. Los parámetros son los mismos que las funciones **mean()** y **median()**.
+
+Calculemos la varianza de la variable **urban**:
+
+```{r 01_var, exercise=TRUE}
+
+var(d$urban)
+
+```
+
+Ahora, calcula la varianza de las variables **over64** (% de edad 65 o superior) y **permit**.
+
+```{r 02_var, exercise=TRUE}
+
+
+```
+
+
+```{r 02_var-solution}
+
+var(d$over64)
+
+var(d$permit,na.rm = TRUE)
+
+```
+
+
+#### **Desviación Estándar**
+
+La **desviación estándar** es la última medida de dispersión considerada en este tutorial. Se mide en la función **sd()** de R.
+
+Calculemos la desviación estándar de la variable **urban**:
+
+```{r 01_sd, exercise=TRUE}
+
+sd(d$urban)
+
+```
+
+Calcula ahora la desviación estándar de las variables **over64** (% de edad 65 o superior) y **permit**.
+
+```{r 02_sd, exercise=TRUE}
+
+
+```
+
+
+```{r 02_sd-solution}
+
+sd(d$over64)
+
+sd(d$permit,na.rm = TRUE)
+
+```
+
+
+## Trabajando con Datos Categóricos: Frecuencias
+
+### Frecuencias de datos categóricos
+
+Mira el video a continuación para entender cómo calcular datos categóricos:
+
+![](https://www.youtube.com/watch?v=j7i58t5a5BU)
+
+
+### Tablas de Frecuencia en R
+
+Las tablas de frecuencia son la forma más adecuada de resumir datos categóricos. Una vez que tenemos las frecuencias, podemos usarlas para calcular una serie de otras estadísticas e indicadores.
+
+La función **table()** en R devuelve los recuentos de cada categoría en una variable dada. Vamos a usarla para devolver el tipo de política de género que mantienen los EE. UU.:
+
+
+```{r 01_table, exercise=TRUE}
+
+table(d$gay_policy)
+
+
+```
+
+Como podemos observar, la mayoría de los estados son Conservadores (10) o Muy Conservadores (20). Si quisiéramos expresar estos números en porcentajes, necesitaríamos dividir los resultados por el número total de casos o usar la función **prop.table()**. Hagámoslo:
+
+```{r 02_table, exercise=TRUE}
+
+# Dividiendo los resultados por el total
+# de observaciones y, entonces, 
+# multiplicando por 100 
+table(d$gay_policy)/sum(table(d$gay_policy))*100
+
+# Usando la función prop.table() y, 
+# entonces, multiplicando por 100
+prop.table(table(d$gay_policy))*100
+
+```
+
+
+## Explorando la Distribución de Datos en R
+
+### Explorando los data.frames
+
+La síntesis de datos en R se refiere al proceso de reducir un conjunto de datos a un tamaño más manejable mediante la agregación o extracción de información clave de él. Esto se puede hacer utilizando varias funciones de R como **summarize()** y **aggregate()** que le permiten realizar cálculos como la media, la mediana y la desviación estándar en columnas específicas o grupos de datos. Además, la función **describe()** proporciona un resumen rápido de estadísticas básicas para un conjunto de datos dado. Otros paquetes de R como **dplyr** y **tidyr** también proporcionan funciones útiles para la síntesis y manipulación de datos.
+
+La función **summary()** en R es una función genérica que se utiliza para producir un resumen de varios tipos de objetos de R, como vectores, matrices, listas, marcos de datos y modelos. Cuando se aplica a un vector o un marco de datos, **summary()** devuelve una variedad de estadísticas resumidas, como la media, la mediana, la desviación estándar, los valores mínimos y máximos del vector o marco de datos.
+
+Por ejemplo, si tenemos un marco de datos llamado *d* podemos usar el siguiente comando para obtener un resumen del marco de datos:
+
+
+```{r 01_sum, exercise=TRUE}
+
+summary(d)
+
+```
+
+Esta función hará un resumen de cada columna en el marco de datos, incluyendo el número de valores no faltantes, la media, la desviación estándar, los valores mínimos y máximos, junto con los cuartiles de los datos.
+
+También es posible usar la función **summary()** en columnas específicas de un marco de datos llamando a la función en la columna de interés:
+
+```{r 03_sum, exercise=TRUE}
+
+# Resume la variable con el % de personas
+# con universidad.
+summary(d$college)
+
+```
+
+Vale la pena señalar que la función **summary()** también funciona con otros tipos de objetos de R, como modelos, listas y matrices y la salida puede variar según el tipo de objeto que se le pase.
+
+La función **str()** en R se utiliza para mostrar la estructura interna de un objeto de R. Es una función genérica que se puede utilizar para inspeccionar la estructura de varios tipos de objetos de R, incluyendo vectores, matrices, listas, marcos de datos y modelos.
+
+Cuando se aplica a un data.frame, **str()** devuelve un resumen de la estructura del marco de datos, incluyendo el número de filas y columnas, el nombre de cada columna y las primeras filas de datos. Por ejemplo:
+
+
+```{r 04_sum, exercise=TRUE}
+
+# Tipos de datos
+str(d)
+
+```
+
+Este procedimiento mostrará un resumen de la estructura del marco de datos, incluyendo el número de filas y columnas, el nombre de cada columna, la clase de cada columna y los primeros valores del marco de datos.
+
+Cuando se aplica a un vector o una lista, **str()** devuelve la longitud del objeto, la clase (por ejemplo, "numérico", "carácter") y los primeros valores.
+
+La función **str()** es particularmente útil cuando se trabaja con conjuntos de datos grandes o complejos, ya que le permite inspeccionar rápidamente la estructura de los datos e identificar posibles problemas, como datos faltantes o tipos de datos inesperados.
+
+También es importante tener en cuenta que la función **str()** muestra menos información que la función **summary()**, y es más útil cuando el objeto es grande, complicado o cuando se desea mostrar la estructura de los datos sin mostrar los datos en sí.
+
+También podemos aplicar tales funciones a una selección de las variables para evitar devolver información sobre demasiadas variables:
+
+```{r 05_sum, exercise=TRUE}
+
+# Selecciona las variables pot_policy y prochoice
+summary(d[, c("pot_policy","prochoice")])
+
+```
+
+
+**Ejercicio**
+
+Explore las  variables *dem_score14*, *dem_level4*, *hdi*, *gini08*,*religoin*, y *muslim* en el data.frame world (*w*) usando la función *summary()*:
+
+```{r 06_sum, exercise=TRUE}
+
+```
+
+```{r 06_sum-solution}
+
+# Resume la base de datos w 
+summary(w[,c("dem_score14", "dem_level4", "hdi", "gini08","religoin", "muslim")])
+
+```
+
+
+### Agregar datos
+
+La agregación de datos se refiere al proceso de recopilar y resumir datos de múltiples fuentes en un conjunto de datos único y consolidado. Esto se puede hacer utilizando varias técnicas, como agrupar datos por ciertas variables, aplicar operaciones matemáticas como suma, promedio o conteo a columnas específicas o combinar datos de múltiples tablas o conjuntos de datos.
+
+La agregación de datos se utiliza a menudo para reducir la complejidad de conjuntos de datos grandes y facilitar el análisis y la visualización de datos. También se puede utilizar para identificar patrones, tendencias y valores atípicos en los datos.
+
+En el R, la agregación de datos se puede realizar utilizando una variedad de funciones y paquetes, como **aggregate()**, **group_by()** y **summarize()** del paquete **dplyr**, **tapply()**, y **by()**. Estas funciones le permiten agrupar datos por ciertas variables y realizar cálculos en columnas específicas.
+
+Por ejemplo, si tenemos un marco de datos con múltiples columnas y queremos calcular la media de algunas columnas y la suma de otras, podemos usar el siguiente comando:
+
+
+```{r 01_agg, exercise=TRUE}
+
+# Selecciona algunas variables de la base de datos d 
+x <- d[,c("region","vep00_turnout","vep04_turnout","vep08_turnout","vep12_turnout")]
+
+# Calcula la media para dichas variables
+aggregate(x, 
+          by=list(
+                  region=x$region), 
+          mean, 
+          na.rm=T)
+
+
+```
+
+
+**Ejercicio**
+
+Ahora, repita la agregación usando la variable *religoin* para grupos y *hdi*, *gini10*, *dem_score14*,*lifeex_total*, y *frac_eth*.
+
+
+```{r 02_agg, exercise=TRUE}
+
+
+```
+
+```{r 02_agg-solution}
+
+# Selecciona las variables de w 
+x <- w[,c("religoin","hdi", "gini10", "dem_score14", "lifeex_total", "frac_eth")]
+
+# Calcula las medias para tales variables
+aggregate(x, 
+          by=list(
+                  region=x$religoin), 
+          mean, 
+          na.rm=T)
+
+```
+
+
+**El paquete *dplyr* **
+
+Como se mencionó anteriormente, el paquete *dplyr* extiende la funcionalidad básica de R *aggregate()* y nos permite usar varias funciones simultáneamente para agregar los datos en grupos.
+
+
+```{r 03_agg, exercise=TRUE, exercise.lines=15}
+
+# carga el paquete dplyr 
+library(dplyr)
+
+# Calcula la media POR REGION para vep00_turnout, la
+# desviación estándar para vep04_turnout, el valor mínimo
+# para vep08_turnout, y el máximo para vep12_turnout
+d |>
+  group_by(region) |>
+  summarize(mean=mean(vep00_turnout),
+            sd=sd(vep04_turnout),
+            min=min(vep08_turnout),
+            max=max(vep12_turnout))
+
+```
+
+Ahora, repita el procedimiento anterior para el conjunto de datos *w* usando la variable *religoin* para grupos y la media para *hdi*, la desviación estándar para *gini10*, la mediana para *dem_score14*, el mínimo para *lifeex_total*, y el máximo para *frac_eth*. No olvide excluir los casos faltantes:
+
+```{r 04_agg, exercise=TRUE}
+
+```
+
+```{r 04_agg-solution}
+
+# carga dplyr
+library(dplyr)
+
+# Calcula los agregados por religion
+w |>
+  group_by(religoin) |>
+  summarise(m_hdi=mean(hdi, na.rm = T),
+            sd_gini=sd(gini10, na.rm=T),
+            med_dem=median(dem_score14, na.rm=T),
+            min_life=min(lifeex_total, na.rm=T),
+            max_frac=max(frac_eth, na.rm=T)
+            )
+
+
+```
+
+
+## Medidas de Asociación
+
+**Antes de empezar**
+
+En los ejercicios diseñados para este tutorial usaremos dos conjuntos de datos. El primero es el data.frame **d** basado en el data.frame **states** del paquete *polscidata* (como en la sección anterior). El segundo es el conjunto de datos **tt** basado en el data.frame Titanic que contiene datos sobre pasajeros y tripulantes del Titanic (Clase, Edad, Sexo, y si sobrevivieron o no).
+
+#### ¿Cómo podemos medir la relación entre variables?
+
+¿Cuál es la relación entre el ejercicio físico y el peso corporal? ¿Y qué hay del tiempo de estudio y las calificaciones? ¿Hay alguna relación entre la educación y los ingresos? ¿La contaminación del aire y las enfermedades respiratorias? Estas preguntas se refieren a la asociación entre diferentes fenómenos. Usualmente usamos este tipo de preguntas cuando tratamos de establecer cómo un evento o atributo impacta en otro.
+
+En estadística, la forma de medir este concepto amplio es la covarianza. Se basa en un principio sencillo: ¿cuánto y en qué dirección cambia la variable *y* cuando la otra variable *x* cambia? Así, si cada año de escolaridad aumenta 100 Euros en ingresos futuros, podemos decir que hay una correlación positiva entre educación e ingresos. Esto se debe a que ambos aumentan. Lo contrario ocurre con el gasto público en saneamiento y la mortalidad infantil. Cuanto más gastan los gobiernos en saneamiento (agua limpia y alcantarillado), menor es el número de muertes en niños pequeños. En este caso, hay una asociación negativa.
+
+Asista al video corto sobre covarianza:
+
+![](https://www.youtube.com/watch?v=TPcAnExkWwQ)
+
+
+El coeficiente de correlación de Pearson es una medida de la fuerza y dirección de la relación lineal entre dos variables. En otras palabras, mide cómo se relacionan dos variables cuantitativas. El valor de la correlación de Pearson varía entre -1 y 1. Un valor de 1 indica una correlación positiva perfecta, mientras que un valor de -1 indica una correlación negativa perfecta. Un valor de 0 indica que no hay relación entre las dos variables.
+
+
+Mira el video corto sobre correlación de Pearson:
+![](https://www.youtube.com/watch?v=GtV-VYdNt_g&list=PL8dPuuaLjXtNM_Y-bUAhblSAdWRnmBUcr&index=10)
+
+
+## Mediciones de Asociación en R
+
+En esta sección, exploraremos cómo se pueden calcular en R las dos principales medidas de asociación. La primera es la covarianza y la segunda la correlación. Finalmente, aprenderemos a crear un correlograma, un gráfico que facilita la interpretación de un gran número de variables.
+
+
+<br>
+
+#### **Covarianza**
+
+La covarianza es una medida de la relación entre dos variables. Es similar a la varianza, pero donde la varianza nos dice cómo una sola variable varía, la covarianza nos dice cómo dos variables varían juntas. La covarianza es positiva si las dos variables tienden a aumentar juntas y negativa si una variable disminuye cuando la otra aumenta. La covarianza es cero si no hay relación entre las dos variables.
+
+En R, la función *cov()* es la responsable de calcular la covarianza de dos variables. El fragmento de código a continuación calcula la matriz de covarianza para las variables *unemploy* y *urban*, ambas pertenecientes al data.frame *d*.
+
+
+```{r 01_cov, exercise=TRUE}
+
+cov(d$unemploy, d$urban)
+
+```
+
+En el siguiente ejemplo, una de las variables *relig_import* (Porcentaje de personas que dicen que la religión juega un papel importante en sus vidas) tiene valores faltantes. Después de ejecutar el código a continuación, puede ver que la primera covarianza devuelve NA. Esto ocurre precisamente porque los NAs no se tratan. En las funciones *mean()*, *median()*, *var()*, y *sd()*, los NAs se manejan utilizando el parámetro "na.rm=T". En el caso de la covarianza y la correlación, se debe utilizar un nuevo parámetro **use="pairwise.complete.obs"**. Esta opción le dice a R que solo debe calcular la covarianza (o la correlación) para aquellos pares de valores donde ambos son diferentes de NA.
+
+```{r 02_cov, exercise=TRUE}
+
+# Covarianza sin lidiar con casos perdidos NAs 
+cov(d$unemploy, d$relig_import)
+
+# Covarianza lidiando con NAs
+cov(d$unemploy, d$relig_import, use="pairwise.complete.obs")
+
+```
+
+**Práctica**
+
+Ahora es tu turno. Calcula la covarianza entre las variables *obama08* (% de voto en Obama en 2008) y *obama2012* (% de voto en Obama en 2012) en el data.frame *d*.
+
+
+```{r 03_cov, exercise=TRUE}
+
+
+```
+
+```{r 03_cov-solution}
+
+cov(d$obama08, d$obama2012)
+
+```
+
+
+<br>
+
+
+#### **Correlación**
+
+Distintamente de la covarianza, el **coeficiente de correlación** siempre varía de -1 a 1 independientemente de la escala de las variables empleadas en los cálculos. Por lo tanto, somos capaces de evaluar no solo la dirección, sino también la fuerza de la relación entre estos fenómenos, como ya has visto en los videos.
+
+Ahora, calculemos la correlación entre las variables *abort_rate08* (tasa de aborto en 2008) y *obama08* (% de voto en Obama en 2008) en el data.frame *d*.
+
+```{r 01_cor, exercise=TRUE}
+
+cor(d$abort_rate08, d$obama08)
+
+```
+
+El resultado es un coeficiente de correlación (r) igual a 0.642. Parece que hay una asociación moderada y positiva entre el aborto y el voto en Obama en 2008. Más claramente, cuanto mayor es la tasa de aborto, mayor es el voto potencial en Obama. La relación no es perfecta (si este fuera el caso, r=1), pero es lo suficientemente fuerte como para llamar nuestra atención sobre la relación entre el aborto y el voto.
+
+Repita el cálculo de correlación anterior, pero ahora use *mccain08* (% de voto en John McCain en 2008) en lugar de *obama08*. ¿Qué obtienes como resultado?
+
+
+```{r 02_cor, exercise=TRUE}
+
+
+```
+
+```{r 02_cor-solution}
+
+cor(d$abort_rate08, d$mccain08)
+
+```
+
+
+**Correlación de múltiples variables**
+
+En muchas ocasiones queremos realizar muchas correlaciones al mismo tiempo para acelerar el análisis. En esos casos, solo necesitamos proporcionar un data.frame o matriz con SOLO variables numéricas y la función *cor()* devuelve una tabla con todas las correlaciones para estas variables.
+
+
+```{r 03_cor, exercise=TRUE, exercise.lines=14}
+
+# Selecciona algunas variables 
+# del data.frame d
+ds <- d[,c("urban","unemploy",
+           "abort_rate08","prcapinc",
+           "relig_high","obama08","mccain08")]
+
+# Calcula la correlación para esas
+# variables
+co <- cor(ds)
+
+# Muestra los resultados
+round(co,3)
+
+```
+
+Como puedes observar, el resultado es una matriz con la correlación entre todas las variables. El coeficiente r para *urban* vs. *urban* es 1.000 porque es la misma variable correlacionada consigo misma. Lo mismo ocurre con todas las demás variables cuando se comparan consigo mismas. El díada *urban* vs. *unemploy*, por otro lado, tiene un r=0.109, una asociación pequeña y positiva. Ahora, *urban* vs. *abort_rate08* presenta un r=0.663, positivo y moderado. El voto en McCain (*mccain08*) está negativamente y fuertemente correlacionado con el voto en Obama en 2008 (*obama08*). Dado que la política de los Estados Unidos es bipartidista, es normal esperar que cuando el voto en un candidato aumenta, el voto en el otro disminuya.
+
+Por lo tanto, tales resultados nos ayudan a identificar aquellas variables con relaciones fuertes (tanto positivas como negativas) y a determinar aquellas que, inicialmente, no parecen estar relacionadas.
+
+<br>
+
+
+## Trabajando con datos categóricos: Frecuencias cruzadas
+
+### Frecuencias de datos categóricos
+
+Visualice el video sobre cómo interpretar tablas de contingencia o frecuencias cruzadas:
+
+![](https://www.youtube.com/watch?v=9KIQC9Npndg)
+
+
+### Tablas de contingencia en R
+
+Tablas de frecuencia son la forma más adecuada de resumir datos categóricos. Una vez que tenemos las frecuencias, podemos usarlas para calcular una serie de otras estadísticas e indicadores. La misma función **table()** utilizada en sesiones anteriores se puede usar para tablas de contingencia para más de una variable categórica.
+
+La función **prop.table()** devuelve la proporción de cada categoría en una celda dada de la tabla:
+
+```{r 01_tableA, exercise=TRUE}
+
+tb <- table(d$gay_policy, d$region)
+
+prop.table(tb)*100
+
+```
+
+<br>
+
+No obstante, el resultado no es exactamente lo que necesitamos. Los porcentajes son relativos al total y no para la columna o la fila. La apariencia también podría mejorarse significativamente.
+
+La función **crosstable()** del paquete *crosstable* produce una presentación mucho más agradable de los resultados:
+
+```{r 02_tableA, exercise=TRUE}
+
+library(crosstable)
+
+crosstable(data = d,           # data = nombre del Data frame
+           cols = gay_policy,  # cols = Variable(s)
+           by= region) %>%     # by = Variable que agrega los resultados
+  as_flextable()
+
+```
+
+<br>
+
+Hazlo tú mismo. Usando el código en el fragmento anterior, crea una tabla cruzada para las variables *pot_policy* (Leyes de Marihuana) y *obama_win12* (Obama ganó el Estado en 2012).
+
+```{r 03_tableA, exercise=TRUE}
+
+
+```
+
+```{r 03_tableA-solution}
+
+library(crosstable)
+
+crosstable(data = d, 
+           cols = pot_policy, 
+           by= obama_win12) %>%
+  as_flextable()
+
+```
+
+<br>
+
+Ahora, empleando los datos del Titanic (tt), crea una tabla de contingencia para las variables *Sex* (Sexo del Pasajero) y *Survived* (Sobrevivió).
+
+```{r 04_tableA, exercise=TRUE}
+
+
+```
+
+```{r 04_tableA-solution}
+
+library(crosstable)
+
+crosstable(data = tt, 
+           cols = Sex, 
+           by= Survived) %>%
+  as_flextable()
+
+```
+
+<br>
+
+Ahora, repite la operación usando el conjunto de datos del Titanic (tt) para crear una tabla de contingencia para las variables *Class* (Clase del Pasajero) y *Survived*.
+
+```{r 05_tableA, exercise=TRUE}
+
+
+```
+
+```{r 05_tableA-solution}
+
+library(crosstable)
+
+crosstable(data = tt, 
+           cols = Class, 
+           by = Survived) %>%
+  as_flextable()
+
+```
+
+<br>
+
+Pongamos un poco de pimienta en el ejercicio. Filtra los datos *tt* para incluir solo miembros de la tripulación en un nuevo data.frame llamado *cw*. Luego, repite la operación usando el conjunto de datos de la tripulación del Titanic (*cw*) para crear una tabla de contingencia para las variables *Sex* (Sexo del miembro de la tripulación) y *Survived*.
+
+
+```{r 06_tableA, exercise=TRUE}
+
+
+```
+
+```{r 06_tableA-solution}
+
+# Selecciona solamente los tripulantes
+# en el data.frame cw
+cw <- tt[tt$Class=="Crew",]
+
+library(crosstable)
+
+crosstable(data = cw, 
+           cols = Sex, 
+           by= Survived) %>%
+  as_flextable()
+
+```
+
+## Hipótesis y Significancia Estadística
+
+El test de hipótesis es un método estadístico utilizado en las ciencias sociales para determinar si hay suficiente evidencia para respaldar una afirmación o hipótesis específica sobre una población. Implica formular una hipótesis nula, que representa la suposición predeterminada o de no diferencia, y una hipótesis alternativa, que representa la afirmación o creencia que se está probando. Luego, se recopila una muestra de datos y se analiza utilizando pruebas estadísticas para determinar la probabilidad de obtener los resultados observados bajo la hipótesis nula. Dependiendo del resultado, la hipótesis nula se acepta o rechaza, proporcionando o no soporte para la hipótesis alternativa.
+
+Algunas aplicaciones específicas de las pruebas de hipótesis en las ciencias sociales incluyen:
+
+1. Prueba de la efectividad de una nueva política o intervención: Los investigadores pueden utilizar la prueba de hipótesis para determinar si una nueva política o intervención tiene el efecto deseado en una población. Por ejemplo, un investigador podría probar la hipótesis de que un nuevo programa educativo conducirá a puntajes más altos en las pruebas entre los estudiantes.
+
+2. Evaluación de la relación entre variables: Los investigadores pueden utilizar la prueba de hipótesis para investigar la relación entre diferentes variables. Por ejemplo, un investigador podría probar la hipótesis de que hay una relación positiva entre el ingreso y la felicidad.
+
+3. Investigación de diferencias entre grupos: Los investigadores pueden utilizar la prueba de hipótesis para determinar si hay diferencias significativas entre diferentes grupos. Por ejemplo, un investigador podría probar la hipótesis de que hay diferencias en los patrones de votación entre hombres y mujeres.
+
+4. Evaluación de la validez de una herramienta de medición: Los investigadores pueden utilizar la prueba de hipótesis para determinar si una herramienta de medición, como una encuesta o cuestionario, es confiable y válida.
+
+5. Exploración del impacto de factores demográficos: Los investigadores pueden utilizar la prueba de hipótesis para investigar el impacto de factores demográficos, como la edad, el género y la raza, en un resultado específico.
+
+
+## P-values y nivel de significancia
+
+### Hipótesis nula
+
+Una hipótesis nula es una afirmación que representa la suposición predeterminada o de no diferencia en un test de hipótesis. Es la hipótesis que se prueba para determinar si hay suficiente evidencia para rechazarla en favor de la hipótesis alternativa. La hipótesis nula se denota como H0 y generalmente se formula como una afirmación de igualdad. Por ejemplo, una hipótesis nula podría afirmar que no hay diferencia en los puntajes de prueba entre dos grupos de estudiantes.
+
+### Hipótesis alternativa
+
+Una hipótesis alternativa es una afirmación que representa la creencia o afirmación que se está probando en un test de hipótesis. Representa la posibilidad de que haya una diferencia o efecto en la población. La hipótesis alternativa se denota como H1 y generalmente se formula como una afirmación de desigualdad. Por ejemplo, una hipótesis alternativa podría afirmar que hay una diferencia en los puntajes de prueba entre dos grupos de estudiantes.
+
+El objetivo de un test de hipótesis es determinar si hay suficiente evidencia para rechazar la hipótesis nula en favor de la hipótesis alternativa. Si la hipótesis nula se rechaza, significa que hay evidencia para respaldar la hipótesis alternativa. Si la hipótesis nula no se rechaza, significa que no hay suficiente evidencia para respaldar la hipótesis alternativa.
+
+Resulta importante tener en cuenta que un fallo en rechazar la hipótesis nula no significa que la hipótesis nula sea verdadera, sino que la evidencia no es lo suficientemente fuerte como para rechazarla.
+
+### El valor p
+
+El valor p es una medida de la evidencia en contra de una hipótesis nula. Representa la probabilidad de obtener un resultado tan extremo o más extremo que el observado, asumiendo que la hipótesis nula es verdadera.
+
+El valor p se utiliza para determinar si hay suficiente evidencia para rechazar la hipótesis nula en favor de la hipótesis alternativa. Si el valor p es menor que un nivel de significancia predeterminado (generalmente 0.05 o 0.01), se rechaza la hipótesis nula y se acepta la hipótesis alternativa. Si el valor p es mayor que el nivel de significancia, no se rechaza la hipótesis nula.
+
+Por otro lado, un valor p mayor que el nivel de significancia significa que no hay suficiente evidencia para rechazar la hipótesis nula, y los resultados pueden haber ocurrido por casualidad. Por lo tanto, el investigador no rechaza la hipótesis nula.
+
+Es importante tener en cuenta que un valor p bajo no significa que la hipótesis alternativa sea verdadera, sino que hay suficiente evidencia para rechazar la hipótesis nula en favor de la hipótesis alternativa.
+
+También resulta importante señalar que un valor p bajo no significa que la hipótesis sea verdadera, simplemente significa que los datos son poco probables bajo la hipótesis nula.
+
+### Niveles de significancia
+
+Los niveles de significancia se refieren a los niveles de significancia estadística en las pruebas de hipótesis. En las pruebas de hipótesis, un nivel de significancia es un umbral utilizado para determinar si una diferencia o relación observada es estadísticamente significativa. Un nivel de significancia comúnmente utilizado en la investigación es 0.05, lo que significa que hay un 5% de probabilidad de que la diferencia o relación observada sea debida al azar. Si la probabilidad de obtener un resultado tan extremo o más extremo que el observado, si la hipótesis nula es verdadera, es menor o igual al nivel de significancia, se rechaza la hipótesis nula y se acepta la hipótesis alternativa.
+
+Por ejemplo, en un estudio que investiga la relación entre el ingreso y la felicidad, los investigadores podrían utilizar un nivel de significancia de 0.05 para determinar si la relación observada entre el ingreso y la felicidad es estadísticamente significativa. Si la probabilidad de observar una relación tan fuerte o más fuerte que la observada, si la hipótesis nula es verdadera, es menor o igual a 0.05, los investigadores rechazarían la hipótesis nula y concluirían que hay una relación estadísticamente significativa entre el ingreso y la felicidad.
+
+
+### Video
+
+Asiste al siguiente video para aprender más sobre el concepto de valor p:
+
+![](https://www.youtube.com/watch?v=bf3egy7TQ2Q)
+
+
+
+### Ejercicio
+
+1. ¿Es mayor la tasa de abortos en los estados donde Obama ganó en 2008?
+
+Formula la pregunta como un conjunto de hipótesis nula y alternativa:
+
+**H0:** Estados que votaron por Obama y McCain tienen la misma tasa de abortos.
+
+**H1:** Estados donde Obama ganó tienen una tasa de abortos mayor que los estados donde McCain ganó.
+
+
+```{r 01_pval, exercise=TRUE, exercise.lines=10}
+
+# Testa la hipótesis nula de que la tasa de abortos es la misma en los estados donde Obama y McCain ganaron en 2008
+tt <- t.test(d$abort_rate08~d$obama_win08)
+
+# Examina el valor p
+# Te informa la probabilidad de aceptar 
+# que H0 sea verdadera:
+tt$p.value
+
+# Ahora, redondea a 3 decimales
+round(tt$p.value,3)
+
+```
+
+
+
+```{r 01_quizA}
+quiz(caption = "¿Que te parece?",
+    question("Después de analizar el valor p, puedes decir que (recuerda usar el nivel de significancia de 0.05):",
+      answer("H0 es verdadera, por lo que no hay una diferencia significativa.", message = "El valor p es menor que 0.05, lo que significa que hay suficiente evidencia para RECHAZAR la hipótesis nula en favor de la hipótesis alternativa. Por lo tanto, podemos concluir que hay una diferencia significativa en la tasa de abortos entre los estados donde Obama y McCain ganaron en 2008."),
+      answer("H1 es verdadera, por lo que los estados donde Obama ganó tienen una tasa de abortos mayor que los estados donde McCain ganó.", correct = TRUE),
+      answer("La evidencia no es suficiente para rechazar la hipótesis nula.", message = "Hay suficiente evidencia para rechazar la hipótesis nula en favor de la hipótesis alternativa. El valor p or la probabilidad de aceptar H0 como verdadera es realmente baja (menos de uno en un millón)."),
+      allow_retry = T
+  ))
+```
+
+
+## El test de Chi-Cuadrado
+
+### Definición
+
+Un test de Chi-Cuadrado es una prueba estadística que se utiliza para determinar si hay una diferencia significativa entre las frecuencias esperadas y observadas en un conjunto de datos categóricos. La prueba se basa en la distribución de Chi-Cuadrado, que es una distribución de probabilidad que describe la distribución de la suma de los cuadrados de k variables normales estándar independientes.
+
+El teste de Chi-Cuadrado es comúnmente utilizado en pruebas de hipótesis para probar la bondad de ajuste de un modelo a los datos observados, o para probar la independencia en una tabla de contingencia.
+
+Cuando se prueba la bondad de ajuste, la hipótesis nula es que los datos siguen una distribución de probabilidad específica, y la hipótesis alternativa es que los datos no siguen esa distribución.
+
+Cuando se prueba la independencia en una tabla de contingencia, la hipótesis nula es que no hay asociación entre las dos variables categóricas y la hipótesis alternativa es que hay una asociación entre las dos variables.
+
+El estadístico de prueba utilizado en un test de Chi-Cuadrado se calcula sumando las diferencias al cuadrado entre las frecuencias observadas y esperadas, divididas por las frecuencias esperadas. El estadístico de prueba calculado se compara entonces con la distribución de Chi-Cuadrado con un cierto grado de libertad para determinar el valor p.
+
+Un valor p menor que un nivel de significancia elegido (generalmente 0.05) se toma como evidencia para rechazar la hipótesis nula y aceptar la hipótesis alternativa.
+
+Es importante tener en cuenta que el test de Chi-Cuadrado asume que el tamaño de la muestra es lo suficientemente grande, de lo contrario no es apropiado utilizarlo.
+
+### Ejemplos
+
+Un ejemplo proviene de la prueba de Independencia en Encuestas de Votantes. Un investigador puede querer probar si la afiliación política de un votante es independiente de su edad. Recopilarían datos sobre la edad y la afiliación política de una muestra de votantes y crearían una tabla de contingencia. La hipótesis nula sería que no hay asociación entre la edad y la afiliación política y la hipótesis alternativa sería que hay una asociación. Se podría utilizar una prueba de Chi-Cuadrado para determinar si las frecuencias observadas difieren significativamente de lo que se esperaría si la hipótesis nula fuera verdadera.
+
+
+### Video
+
+Asiste al video siguiente sobre el test de Chi-Cuadrado:
+
+![](https://www.youtube.com/watch?v=7_cs1YlZoug)
+
+
+### El Chi-Cuadrado en R
+
+En R, puedes realizar un test de Chi-Cuadrado utilizando la función chisq.test(). La función toma una tabla de contingencia como argumento, que es una tabla que muestra la distribución de frecuencias de dos o más variables categóricas. La tabla de contingencia se puede introducir como una matriz o un data frame.
+
+Por ejemplo, si tenemos un data frame llamado *d* con dos columnas *abort_rank3* y *religiosity3*, y queremos probar si hay una asociación significativa entre las dos variables, usaríamos el siguiente código:
+
+
+```{r 01_chi, exercise=TRUE, exercise.lines=5}
+
+# Realiza el test de chi-cuadrado
+chisq.test(d$abort_rank3, d$religiosity3)
+
+```
+
+
+```{r 01_chi_quiz}
+quiz(caption = "¿Qué te parece?",
+    question("Después de analuzar el valor p, puedes decir que (recuerda usar el nivel de significancia de 0.05):",
+      answer("El valor p o la probabilidad de aceptar H0 como verdadera es realmente baja (uno en diez mil). Por lo tanto, aceptamos que hay una relación de significancia estadística entre las restricciones al aborto y la religiosidad."),
+      answer("H1 es verdadero, por lo que hay una asociación estadística entre las restricciones al aborto y la religiosidad.", correct = TRUE),
+      answer("La evidencia no resulta suficiente para distinguir entre las dos.", message = "Hay suficiente evidencia para rechazar la hipótesis nula en favor de la hipótesis alternativa. El valor p o la probabilidad de aceptar H0 como verdadera es realmente baja (uno en diez mil). Por lo tanto, aceptamos que hay una relación de significancia estadística entre las restricciones al aborto y la religiosidad."),
+      allow_retry = T
+  ))
+```
+
+
+### Ejercicio
+
+**Inténtalo tú**
+
+Empleando nuestros datos sobre países del mundo (*w*), proporciona una respuesta a la siguiente pregunta:
+
+¿Está relacionado el nivel de PIB *per cápita* en 2008 (*gdpcap3_08*) con el tipo de régimen (*dem_level4*)? ¿Varía la riqueza según el tipo de régimen? Recuerda, cada pregunta tiene sus propias hipótesis nula y alternativa:
+
+**H0:** El nivel de riqueza (PIB per cápita) no afecta al tipo de régimen
+
+**H1:** El nivel de riqueza varía según el tipo de régimen
+
+Intenta realizar el test de Chi-Cuadrado en R para probar estas hipótesis:
+
+
+```{r 02_chi, exercise=TRUE, exercise.lines=3}
+
+```
+
+```{r 02_chi-solution}
+# Realiza el test chi-cuadrado
+chisq.test(w$gdpcap3_08, w$dem_level4)
+
+```
+
+
+```{r 02_chi_quiz}
+quiz(caption = "¿Qué te parece?",
+    question("Después de analizar el valor p, puedes decir que (recuerda usar el nivel de significancia de 0.05):",
+      answer("H0 es verdadera, así que no existe diferencia significativa.", message = "El valor p o la probabilidad de aceptar H0 como verdadera es realmente baja (uno en un millón). Por lo tanto, aceptamos que hay una relación de significancia estadística entre el PIB per cápita y el tipo de régimen."),
+      answer("H1 es verdadera, así que existe una asociación estadística entre PIB per cápita y tipo de régimen.", correct = TRUE),
+      answer("Las evidencias no son suficientes para distinguir entre los diferentes tipos de régimen.", message = "No hay suficiente evidencia para rechazar la hipótesis nula en favor de la hipótesis alternativa. El valor p o la probabilidad de aceptar H0 como verdadera es realmente baja (uno en un millón). Por lo tanto, aceptamos que hay una relación de significancia estadística entre el PIB per cápita y el tipo de régimen."),
+      allow_retry = T
+  ))
+```
+
+
+## El test t de Student
+
+### Definición
+
+El test t de Student es una prueba estadística utilizada para determinar si hay una diferencia significativa entre las medias de dos grupos. Se utiliza para comparar las medias de dos muestras, cuando las varianzas de las dos poblaciones son desconocidas y el tamaño de la muestra es pequeño. Se basa en la distribución t, que es una distribución de probabilidad que es similar a la distribución normal estándar, pero con una cola ligeramente más plana.
+
+Existen dos tipos de test t: el test t de muestras independientes y el test t de muestras dependientes.
+
+**1. Test t de muestras independientes:** Se utiliza cuando las dos muestras son independientes entre sí, como comparar el PIB per cápita entre dos países diferentes. Por ejemplo, un investigador puede querer comparar el PIB per cápita de Estados Unidos con el de China. La hipótesis nula sería que no hay diferencia en el PIB per cápita entre los dos países y la hipótesis alternativa sería que hay una diferencia.
+
+**2. Test t de muestras dependientes:** Este test se utiliza cuando los dos grupos están relacionados de alguna manera, como comparar el PIB per cápita antes y después de la implementación de una cierta política. Por ejemplo, se puede comparar el PIB per cápita de un país antes y después de la firma de un acuerdo comercial. La hipótesis nula sería que no hay diferencia en el PIB per cápita antes y después del acuerdo comercial y la hipótesis alternativa sería que hay una diferencia.
+
+Resulta importante tener en cuenta que el test t asume que los datos son aproximadamente distribuidos normalmente y que las varianzas de los dos grupos son iguales. Si estas suposiciones no se cumplen, puede ser más apropiado utilizar una prueba no paramétrica como el test de rangos de Wilcoxon (Wilcoxon rank-sum test).
+
+m test may be more appropriate.
+
+### Video
+
+Asiste al siguiente video sobre el test t:
+
+![](https://www.youtube.com/watch?v=AGh66ZPpOSQ)
+
+### El test t de Student en R
+
+En R, puedes realizar un test t de Student utilizando la función t.test(). La función se puede utilizar para comparar las medias de dos muestras independientes o la media de una sola muestra con un valor conocido.
+
+**Cuestión:** ¿Son los países con mayorías musulmanas menos democráticos que otros?
+
+**Hipótesis:**
+
+**H0:** Los países musulmanes son tan democráticos como los demás países
+
+**H1:** Los países musulmanes son menos democráticos que los demás países
+
+```{r 01_ttest, exercise=TRUE, exercise.lines=3}
+
+# Ejecuta el test t.
+t.test(w$dem_score14~w$muslim, conf.level=0.99)
+
+```
+
+
+```{r 01_t_quiz}
+quiz(caption = "",
+    question("Después de analizar el valor p, puedes decir que (recuerda usar el nivel de significancia de 0.05):",
+      answer("H0 es verdadero, de modo que no parece haver diferencia significativa entre el nivel PROMEDIO de democracia entre países musulmanes y de otras mayorías religiosas.", message = "El p-value o la probabilidad de H0 como verdadera es realmente baja (menor que uno en un millón). Por lo tanto, aceptamos que existe una diferencia estadísticamente significativa entre el nivel PROMEDIO de democracia en países musulmanes comparados con los demás. No obstante, eso no significa que todos sean más bajos. Estamos hablando de un promedio."),
+      answer("H1 is TRUE, so there is a statistically significant difference in the AVERAGE level of democracy in Muslim compared to other countries.", correct = TRUE),
+      answer("La evidencia no resulta suficiente para distinguir entre las dos hipótesis.", message = "El p-value o la probabilidad de H0 como verdadera es realmente baja (menor que uno en un millón). Por lo tanto, aceptamos que existe una diferencia estadísticamente significativa entre el nivel PROMEDIO de democracia en países musulmanes comparados con los demás. No obstante, eso no significa que todos sean más bajos. Estamos hablando de un promedio."),
+      allow_retry = T
+  ))
+```
+
+
+## El análisis de varianza (ANOVA)
+
+
+El ANOVA (Análisis de Varianza) es un método estadístico utilizado para determinar si hay una diferencia significativa entre las medias de dos o más grupos. Se utiliza para comparar las medias de múltiples muestras, cuando las varianzas de las poblaciones son desconocidas y el tamaño de la muestra es pequeño.
+
+Existen tres tipos de ANOVA: ANOVA de un factor, ANOVA de dos factores y ANOVA de varios factores.
+
+**1. ANOVA de un factor:** Se utiliza cuando hay un solo factor o variable independiente, como comparar el PIB per cápita de varios países. Por ejemplo, un investigador puede querer comparar el PIB per cápita de Estados Unidos, China y Japón. La hipótesis nula sería que no hay diferencia en el PIB per cápita entre los tres países y la hipótesis alternativa sería que hay una diferencia.
+
+**2. ANOVA de dos factores:** Este test se utiliza cuando hay dos variables independientes, como comparar el PIB per cápita de varios países antes y después de la implementación de una cierta política. Por ejemplo, un investigador de estudios globales puede querer comparar el PIB per cápita de Estados Unidos, China y Japón antes y después de la firma de un acuerdo comercial. La hipótesis nula sería que no hay diferencia en el PIB per cápita entre los tres países antes y después del acuerdo comercial y la hipótesis alternativa sería que hay una diferencia.
+
+**3. ANOVA de varios factores:** Este test se utiliza cuando hay más de dos variables independientes, como comparar el PIB per cápita de varios países antes y después de la implementación de una cierta política y también el efecto de la población en el PIB per cápita.
+
+Es importante tener en cuenta que el ANOVA asume que los datos están distribuidos normalmente y que las varianzas de los grupos son iguales. Si estas suposiciones no se cumplen, puede ser más apropiado utilizar una prueba no paramétrica como el test de Kruskal-Wallis.
+
+También resulta importante tener en cuenta que estos ejemplos son solo ejemplos y que los resultados del test ANOVA deben ser interpretados cuidadosamente, considerando otros factores como el tamaño de la muestra, la potencia del test y el tamaño del efecto.
+
+
+### Video
+
+Asiste al siguiente video sobre los tests ANOVA:
+
+![](https://www.youtube.com/watch?v=oOuu8IBd-yo)
+
+### ANOVA en R
+
+En R, puedes realizar un test ANOVA utilizando las funciones aov() o Anova() del paquete car, o la función oneway.test(). El ANOVA se utiliza para determinar si las medias de dos o más grupos son iguales.
+
+Por ejemplo, si tienes una variable llamada "data" que contiene las respuestas de un experimento, y una variable llamada "group" que indica el grupo al que pertenece cada respuesta, y quieres probar si las medias de los grupos son iguales, utilizarías el siguiente código con la función aov():
+
+
+```{r 01_anov, exercise=TRUE, exercise.lines=5}
+
+# Realiza el análisis
+an <- aov(dem_score14~religoin, data = w)
+
+# Recupera los resultados
+summary(an)
+
+```
+
+La función aov() ajusta un modelo ANOVA a los datos, y la función summary() devuelve un resumen del modelo que incluye el estadístico F y el valor p para el test. El valor p te indica la probabilidad de observar un estadístico F tan extremo o más extremo que el calculado a partir de tus datos, asumiendo que la hipótesis nula (es decir, que las medias de los grupos son iguales) es verdadera. Un valor p pequeño (típicamente menor que 0.05) indica que puedes rechazar la hipótesis nula y concluir que hay una diferencia significativa en las medias entre los grupos.
+
+Si los resultados del ANOVA muestran una diferencia significativa entre los grupos, se recomienda realizar pruebas post-hoc para identificar qué grupos son significativamente diferentes. Hay varias pruebas post-hoc disponibles en R como Tukey HSD, Bonferroni, Scheffe, entre otras.
+
+Un test Tukey HSD es una prueba post-hoc que se utiliza para comparar las medias de múltiples grupos después de que un test ANOVA ha revelado una diferencia significativa entre los grupos. Se utiliza para determinar qué pares específicos de grupos son significativamente diferentes entre sí.
+
+En R, puedes realizar un test Tukey HSD utilizando la función TukeyHSD() del paquete stats. La función toma como entrada el resultado de un test ANOVA.
+
+Por ejemplo, repitamos el ANOVA y agreguemos una prueba Tukey HSD en los grupos:
+
+```{r 02_anov, exercise=TRUE, exercise.lines=15}
+
+# Repite el test ANOVA 
+an <- aov(dem_score14~religoin, data = w)
+
+# Realiza el test Tukey HSD con un nivel
+# de significancia de 99% o p=0.01.
+tk<-TukeyHSD(an, conf.level = 0.99)
+
+# Guarda los resultados en un  data.frame 
+dtk <- data.frame(tk$religoin)
+
+# Redondea los valores para facilitar la interpretación
+dtk$p.adj <- round(dtk$p.adj,3)
+
+# Muestra los resultados
+dtk
+
+```
+
+
+### El gráfico Tukey HSD
+
+Un gráfico Tukey HSD, también conocido como un gráfico de comparación múltiple de Tukey, es una representación gráfica de los resultados de una prueba Tukey HSD. Se utiliza para comparar visualmente las medias de múltiples grupos e identificar qué pares específicos de grupos son significativamente diferentes entre sí.
+
+Un gráfico de Tukey HSD típicamente consiste en una serie de líneas, una para cada grupo. Las líneas muestran los valores mínimo y máximo del intervalo de confianza generado por la prueba. El punto en el centro de la línea es la diferencia media entre los dos grupos que se están comparando.
+
+En ese tipo de gráfico, las líneas para los grupos que no son significativamente diferentes entre sí se encuentran conectadas por una línea horizontal, llamada "promedio común". Esta línea representa la diferencia media que no se considera estadísticamente significativa. Las líneas para los grupos que son significativamente diferentes entre sí no están conectadas por una línea horizontal, y la diferencia en las medias se representa por la distancia al promedio común.
+
+El gráfico de Tukey HSD también suele incluir asteriscos, letras u otros símbolos para identificar qué pares específicos de grupos son significativamente diferentes entre sí.
+
+En R, hay muchas formas diferentes de generar un gráfico Tukey HSD. No obstante, dado que utilizaremos el ambiente ggplot en todos nuestros tutoriales (y en el curso de visualización de datos), emplearemos aquí la función ggHSD() del paquete ggiraphExtra:
+
+```{r 03_anov, exercise=TRUE, exercise.lines=16}
+
+# Carga los paquetes
+library(ggplot2)
+library(ggiraphExtra)
+
+# Repite el test de ANOVA
+an <- aov(dem_score14~religoin, data = w)
+
+# Realiza el test Tukey HSD con un nivel
+# de significancia de 99% o p=0.01.
+tk<-TukeyHSD(an, conf.level = 0.99)
+
+
+# Crea un gráfico que representa los 
+# intervalos de confianza informados
+# por el test Tukey HSD
+ggHSD(tk) +
+    theme(axis.text.y = element_text(angle = 0, hjust = 1, size = 10))+
+    theme_classic()
+
+```
+
+
+### Ejercicio
+
+Ahora te toca a ti.
+
+Primero, repite el test ANOVA y agrega una prueba Tukey HSD para los grupos *dem_score14* y *gdp_cap3* del conjunto de datos *w*.
+
+```{r 01_anovE, exercise=TRUE}
+
+```
+
+```{r 01_anovE-solution}
+
+# Realiza el análisis
+an <- aov(dem_score14~gdp_cap3, data = w)
+
+# Muestra los resultados
+summary(an)
+
+```
+
+
+Segundo, genera las diferencias para cada par de categorías utilizando el test Tukey HSD:
+
+```{r 02_anovE, exercise=TRUE}
+
+
+```
+
+```{r 02_anovE-solution}
+
+# Repite el test de ANOVA
+an <- aov(dem_score14~gdp_cap3, data = w)
+
+# Realiza el test Tukey HSD con un nivel
+# de significancia de 99% o p=0.01.
+tk<-TukeyHSD(an, conf.level = 0.99)
+
+# Guarda los resultados en un  data.frame 
+dtk <- data.frame(tk$gdp_cap3)
+
+# Redondea los valores para facilitar la interpretación
+dtk$p.adj <- round(dtk$p.adj,3)
+
+# Muestra los resultados
+dtk
+
+```
+
+Tercero, crea el gráfico para representar los coeficientes:
+
+```{r 03_anovE, exercise=TRUE}
+
+```
+
+```{r 03_anovE-solution}
+
+# Carga los paquetes
+library(ggplot2)
+library(ggiraphExtra)
+
+# Repite el test de ANOVA
+an <- aov(dem_score14~gdp_cap3, data = w)
+
+# Realiza el test Tukey HSD con un nivel
+# de significancia de 99% o p=0.01.
+tk<-TukeyHSD(an, conf.level = 0.99)
+
+# Crea un gráfico que representa los 
+# intervalos de confianza informados
+# por el test Tukey HSD
+ggHSD(tk) +
+    theme(axis.text.y = element_text(angle = 0, hjust = 1, size = 10))+
+    theme_classic()
+
+```
+
+
+

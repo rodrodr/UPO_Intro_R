@@ -1,0 +1,1239 @@
+---
+title: "<b>Sesión 2</b><br><span style='background-color:orange'>Picando datos</span>"
+format: 
+  html:
+    embed-resources: true
+    theme:
+      dark: cyborg
+      light: sketchy
+    #theme: journal
+    toc: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = T)
+library(sortable)
+library(reactable)
+library(poliscidata)
+
+set.seed(12345)
+w <- world[sample(1:nrow(world), 10),]
+w <- world
+wa <- w[,c("country","gini10","dem_level4","religoin", "spendhealth")]
+wb <- w[,c("country","hdi","pop_urban","lifeex_total", "durable")]
+
+w1 <- w[1:83,]
+w2 <- w[84:167,]
+
+options(reactable.theme = reactableTheme(
+  backgroundColor = "transparent"
+))
+
+library(openxlsx)
+
+edu <- read.xlsx("https://www.dropbox.com/s/orz8fdeg8as00fl/edu_nacion.xlsx?dl=1")
+
+
+d <- read.xlsx("https://www.dropbox.com/s/orz8fdeg8as00fl/edu_nacion.xlsx?dl=1")
+
+var <- names(d)
+nm <- c("Comunidad o Provincia",
+        "Total - Personas",
+        "Total - Educación primaria e inferior",
+        "Total - Primera etapa de Educación Secundaria y similar",
+        "Total - Segunda etapa de Educación Secundaria y Educación Postsecundaria no Superior",
+        "Total - Educación Superior",
+        "Total - No aplicable (menor de 15 años)",
+        "Españoles - Total",
+        "Españoles - Educación primaria e inferior",
+        "Españoles - Primera etapa de Educación Secundaria y similar",
+        "Españoles - Segunda etapa de Educación Secundaria y Educación Postsecundaria no Superior",
+        "Españoles - Educación Superior",
+        "Españoles - No aplicable (menor de 15 años)",
+        "Extranjeros - Total",
+        "Extranjeros - Educación primaria e inferior",
+        "Extranjeros - Primera etapa de Educación Secundaria y similar",
+        "Extranjeros - Segunda etapa de Educación Secundaria y Educación Postsecundaria no Superior",
+        "Extranjeros - Educación Superior",
+        "Extranjeros - No aplicable (menor de 15 años)")
+
+desc <- data.frame(Variable=var, Description=nm)
+
+d$com_prov <- trimws(d$com_prov)
+d$code <- substr(d$com_prov, 1,2)
+d$name <- substr(d$com_prov, 4,nchar(d$com_prov))
+
+
+d$ccaa <- 0
+d$ccaa[c(1,10,14,16,18,21,23,33,39,44,48,51,56,58,60,62,66,68,70)] <- 1
+
+# Crea un nuevo objeto solo con datos para las CC. AA.
+ca <- d[d$ccaa==1,]
+
+# Crea un nuevo objeto solo con datos para las provincias
+pr <- d[d$ccaa==0,]
+
+### Reordena los datos para facilitar la visualización
+ca <- ca[,c(20,21,2:19)]
+
+pr <- pr[,c(20,21,2:19)]
+
+
+pr$total_edu_val <- pr$total_edu-pr$tot_edu_no_apl
+pr$es_edu_val <- pr$total_edu_es-pr$es_edu_no_apl
+pr$ex_edu_val <- pr$total_edu_ex-pr$ex_edu_no_apl
+pr$p_foreign <- round(pr$total_edu_ex/pr$total_edu*100,1)
+pr$rt_frgn_es <- round(pr$total_edu_ex/pr$total_edu_es,2)
+pr$p_tot_edu_prim <- round(pr$tot_edu_prim/
+                             pr$total_edu_val*100,1)
+pr$p_tot_edu_sec <- round((pr$tot_edu_prietp_sec+
+                             pr$tot_edu_segetp_sec)/
+                            pr$total_edu_val*100,1)
+pr$p_tot_edu_uni <- round(pr$tot_edu_sup/
+                            pr$total_edu_val*100,1)
+pr$p_es_edu_prim <- round(pr$es_edu_prim/pr$es_edu_val*100,1)
+pr$p_es_edu_sec <- round((pr$es_edu_prietp_sec+pr$es_edu_segetp_sec)/pr$es_edu_val*100,1)
+pr$p_es_edu_uni <- round(pr$es_edu_sup/pr$es_edu_val*100,1)
+pr$p_ex_edu_prim <- round(pr$ex_edu_prim/pr$ex_edu_val*100,1)
+pr$p_ex_edu_sec <- round((pr$ex_edu_prietp_sec+pr$ex_edu_segetp_sec)/pr$ex_edu_val*100,1)
+pr$p_ex_edu_uni <- round(pr$ex_edu_sup/pr$ex_edu_val*100,1)
+
+
+```
+
+
+## Uso básico de data.frames
+
+En esta sección del tutorial se presentan algunas pistas sobre cómo navegar data.frames. Aquí, exploramos algunas tareas básicas en el manejo de datos como renombrar columnas, filtrar y seleccionar, y fusionar datos.
+
+Para ilustrar las ideas, seleccionamos 10 países y algunas variables del conjunto de datos mundial originalmente contenido en el paquete 'polscidata'. Lo llamamos *w* (de *world*, vamos), puedes inspeccionar el contenido en el siguiente fragmento de código:
+
+```{r 04_df1a, exercise=TRUE, exercise.lines=4, eval=F}
+# Muestra todos los valores de w
+w
+
+```
+
+
+```{r 04_df1, exercise=TRUE, exercise.lines=4, echo=F}
+# Muestra todos los valores de w
+reactable(w, sortable = T, resizable = T, searchable = T, wrap = F, theme = reactableTheme(
+  backgroundColor = "transparent"))
+
+
+```
+
+
+### Nombre de las columnas y renombramiento
+
+La función `names()` recupera todos los nombres de las columnas de un data.frame dado. Si usamos `names(w)`, R nos mostrará el nombre y el orden de cada columna en el conjunto de datos:
+
+```{r 04_df2, exercise=TRUE, exercise.lines=4}
+# Nos da los nombres de todas las columnas del
+# data.frame en el orden original que aparecen
+names(w)
+
+```
+
+Como podemos ver, hay 103 columnas en el conjunto de datos que comienzan con "country". Si analizamos la lista de nombres de columnas más de cerca, podemos ver que la columna número 16 está mal escrita como "religoin". Deberíamos corregirlo cambiándolo a "religion". Hacemos eso simplemente asignando un nuevo valor para el 16º elemento de `names()`:
+
+```{r 04_df3, exercise=TRUE, exercise.lines=10}
+
+# Cambia el nombre de la columna religoin a religion
+names(w)[16] <- "religion"
+
+# Puedes también utilizar el nombre original si
+# no estás seguro de dónde se encuentra la variable
+# en el orden.
+names(w)[names(w)=="religoin"] <- "religion"
+
+# Busca de nuevo el nombre de todas las columnas
+names(w)
+
+```
+
+Puedes ver que ahora el nombre es correcto. Intenta renombrar otra variable a continuación:
+
+```{r 04_df3b, exercise=TRUE, exercise.lines=10}
+
+# Cambia en nombre de de cualquier variable de tu
+# preferencia (puede ser cualquiera)
+
+
+# Llama names(w) para averiguar si todo ha ido como esperado.
+
+
+```
+
+```{r 04_df3b-solution}
+
+# Cambia en nombre de de cualquier variable de tu
+# preferencia (puede ser cualquiera)
+names(w)[names(w)=="spendeduc"] <- "spend_education"
+
+# Llama names(w) para averiguar si todo ha ido como esperado.
+names(w)
+
+```
+
+### Usando columnas
+
+Uno de los pasos más comunes en el análisis de datos en R es recuperar los datos de una o más columnas y usarlos para calcular las frecuencias, medias, medianas y otras estadísticas. En R puedes obtener esta información utilizando la fórmula **dataframe\$column**. El primero elemento es el nombre del data.frame, seguido del símbolo **\$** y, luego, del nombre de la columna o variable. Por lo tanto, si queremos la lista de todos los países en el conjunto de datos w (contenido en la columna "country"), sólo necesitamos usar la expresión: w\$country, como se muestra a continuación:
+
+
+```{r 04_df4, exercise=TRUE, exercise.lines=10}
+
+# Devuelve todos los nombres de países 
+# contenidos en el data.frame w:
+w$country
+
+# Podemos también emplear el número de la columna
+# en el orden que aparece en el data.frame 
+# después de una coma:
+w[,1]
+
+```
+
+Como se puede ver, los dos métodos devuelven la misma lista de países. Esto ocurre podque hemos realizado el mismo procedimiento utilizando dos métodos alternativos. No te preocupes por el segundo, lo describiremos con más detalle en la próxima subsección (es una de las características más chulas del R para manipular datos).
+
+Ahora, intenta seleccionar la información sobre el Índice de Desarrollo Humano (columna hdi):
+
+
+```{r 04_df4b}
+
+# Busca la información sobre el HDI:
+w$hdi
+
+```
+
+
+Como podéis ver, algunos valores aparecen como NA. Esto significa que no hay datos disponibles para esos países en particular. El R utiliza NA (Not Available) para representar los valores faltantes o no informados. Siempre que ve un NA, lo retira de los cálculos o lo trata de la manera que definamos en nuestros análisis.
+
+## Abrir datos
+
+### Archivos Excel
+
+Existen múltiples formas de abrir archivos de Excel en R. La más fácil es utilizar la función **read.xlsx()** del paquete *openxlsx*. A pesar de que la función **read.xlsx()** sólo funciona con archivos de Excel recientes (aquellos con la extensión .xlsx), su principal ventaja es poder abrir datos directamente desde Internet sin tener que descargar el archivo primero. El código a continuación abre un Excel que contiene los niveles de educación por nacionalidad y sexo del Censo Demográfico 2021 utilizando un enlace de Dropbox:
+
+```{r 01_open_xl1, exercise=TRUE, eval=F}
+
+library(openxlsx)
+
+d <- read.xlsx("https://www.dropbox.com/s/orz8fdeg8as00fl/edu_nacion.xlsx?dl=1")
+
+d
+
+```
+
+```{r 01_open_xl1a, exercise=TRUE, echo=F}
+
+library(openxlsx)
+
+d <- read.xlsx("https://www.dropbox.com/s/orz8fdeg8as00fl/edu_nacion.xlsx?dl=1")
+
+reactable(d, sortable = T, resizable = T, searchable = T, wrap = F)
+
+```
+
+
+El archivo está ordenado y cada columna está identificada por un nombre. Otros símbolos, notas y comentarios fueron eliminados previamente para facilitar la lectura de los datos. También seleccionamos sólo los datos para "ambos sexos" y eliminamos la información detallada para cada sexo.
+
+Ahora, copia el enlace a continuación y pégalo en tu navegador para descargar y cargar el archivo original desde la página web del INE (Instituto Nacional de Estadística):
+
+https://ine.es/jaxi/files/tpx/es/xlsx/55231.xlsx
+
+Como puedes observar, el archivo tiene encabezados, notas y una estructura más compleja en comparación con los datos abiertos anteriormente. El primer paso para utilizar datos en CUALQUIER paquete estadístico es asegurarse de que tus datos se ajustan a la estructura de una tabla de N filas x N columnas.
+
+
+Si intentamos abrir el archivo sin tratarlo antes, tal como lo proporciona el INE, aparecerá así:
+
+```{r 01_open_xl2, exercise=TRUE, eval=F}
+
+library(openxlsx)
+
+d <- read.xlsx("https://ine.es/jaxi/files/tpx/es/xlsx/55231.xlsx?nocab=1")
+
+d
+
+```
+
+```{r 01_open_xl2a, exercise=TRUE, echo=F}
+
+library(openxlsx)
+
+d <- read.xlsx("https://ine.es/jaxi/files/tpx/es/xlsx/55231.xlsx?nocab=1")
+
+reactable(d, sortable = T, resizable = T, searchable = T, wrap = F)
+
+```
+
+
+Ahora, compara los dos.
+
+La **primera versión** está ordenada, con nombres de variables identificando cada columna y los datos están bien estructurados.
+
+La **segunda versión** es cruda, sin nombres de columnas estructurados y la mayoría de los datos no están tratados.
+
+Por lo tanto, antes de abrir datos en R, verifica si el formato es adecuado o si necesitas realizar un trabajo preliminar.
+
+### Archivos CSV
+
+Otros formatos comunes son los archivos de valores separados por comas (CSV). Estos archivos son básicamente texto con comas separando cada columna. Son particularmente útiles porque:
+
+1. Son fáciles de almacenar y comprimir. Archivos con incluso gigabytes pueden ser comprimidos en archivos mucho más pequeños.
+
+2. Pueden ser abiertos en casi cualquier hoja de cálculo (como Excel o Numbers) o paquete estadístico (R, SPSS, Stata, SAS).
+
+3. Son robustos a los cambios en la tecnología. Versiones de Excel o SPSS hacen que los viejos conjuntos de datos sean incompatibles con el nuevo software. Dado que son texto básico, los archivos CSV son siempre compatibles y probablemente seguirán siendo compatibles en el futuro.
+
+La función para abrir archivos CSV en R es **read.csv()**. El código a continuación abre el archivo CSV que contiene la puntuación de Rotten Tomatoes para cada una de las películas de Robert De Niro:
+
+```{r 02_open_csv, exercise=TRUE, eval=F}
+
+d <- read.csv("https://people.sc.fsu.edu/~jburkardt/data/csv/deniro.csv")
+
+d
+
+```
+
+```{r 02_open_csva, exercise=TRUE, echo=F}
+
+d <- read.csv("https://people.sc.fsu.edu/~jburkardt/data/csv/deniro.csv")
+
+reactable(d, sortable = T, resizable = T, searchable = T, wrap = F)
+
+```
+
+
+**Spain is different**
+
+Algunos países utilizan comas para indicar dígitos decimales en los números. Por lo tanto, 9.99 en los EE.UU. es lo mismo que 9,99 en España. Por esta razón, la mayoría de los archivos csv en esos países utilizan punto y coma (;) para separar columnas. Si utilizamos **read.csv()** los datos no se leerían correctamente. En esos casos, puedes utilizar la función más general **read.delim()** para abrir los archivos csv con otros separadores como punto y coma.
+
+El código a continuación abre un archivo con la definición de las variables para estudios postelectorales del CIS. El archivo original utiliza punto y coma para separar las variables. Por lo tanto, empleamos la función **read.delim()** y añadimos el parámetro sep=";" después del enlace al archivo.
+
+```{r 02_open_csv2, exercise=TRUE, eval=F}
+
+
+d <- read.delim("https://www.dropbox.com/s/6f8nfzshzwelgil/CIS_definicion.csv?dl=1",sep = ";")
+
+d
+
+```
+
+```{r 02_open_csv2a, exercise=TRUE, echo=F}
+
+
+d <- read.delim("https://www.dropbox.com/s/6f8nfzshzwelgil/CIS_definicion.csv?dl=1",sep = ";")
+
+reactable(d, sortable = T, resizable = T, searchable = T, wrap = F)
+
+```
+
+
+### Datos SPSS
+
+SPSS es un paquete estadístico muy popular en las Ciencias Sociales. No es sorprendente que muchos estudios utilicen archivos de datos SPSS (.sav) como fuente principal para distribuir sus resultados. El paquete **foreign** ayuda a abrir datos de otras fuentes como SPSS, dbf y Stata. En el código a continuación, utilizamos la función **read.spss()** para abrir el archivo de datos SPSS del estudio postelectoral realizado por el Centro de Investigaciones Sociológicas (CIS) para las Elecciones Generales de España celebradas en noviembre de 2019.
+
+
+```{r 03_open_sav, exercise=TRUE, warning=F, eval=F}
+
+library(foreign)
+
+d <- read.spss("https://www.dropbox.com/s/s0j6hsidpy08ab3/3269.sav?dl=1", 
+               to.data.frame = T)
+
+d
+
+```
+
+```{r 03_open_sava, exercise=TRUE, warning=F, echo=F, message=F}
+
+library(foreign)
+
+d <- read.spss("https://www.dropbox.com/s/s0j6hsidpy08ab3/3269.sav?dl=1", 
+               to.data.frame = T)
+
+reactable(d, sortable = T, resizable = T, searchable = T, wrap = F)
+
+```
+
+## Limpieza de datos
+
+### Filtrar datos y columnas
+
+Otra tarea común en el análisis de datos es seleccionar solo la información de interés. Muchos conjuntos de datos vienen con muchas variables que no utilizaremos en nuestro análisis. A veces, estamos interesados solo en algunas observaciones y no en todos los casos incluidos en los datos.
+
+Existe una variedad de formas de seleccionar datos en R. La más directa es utilizar una condición lógica para definir las observaciones a seleccionar. Un data.frame es un objeto bidimensional. Contiene Filas y Columnas. Podemos representarlo de esta manera: data.frame[F,C]. Por lo tanto, si quiero seleccionar las primeras 10 filas de los datos, solo necesito llamar a data.frame[1:10,]. Es como jugar el "batalla naval" o "hundir la flota" donde se emplean dos coordinadas (una de la línea y otra de la columna) para poder intentar bombardear el barco del adversario. Este comando selecciona las primeras 10 filas del conjunto de datos. Intentémoslo con nuestro data.frame w:
+
+```{r 04_df5a, exercise=TRUE, exercise.lines=3, eval=F}
+
+# Selecciona todas las columnas de las 10 primeras líneas
+w[1:10,]
+
+```
+
+```{r 04_df5a1, exercise=TRUE, exercise.lines=3, echo=F}
+
+# Selecciona todas las columnas de las 10 primeras líneas
+reactable(w[1:10,], sortable = T, resizable = T, searchable = T, wrap = F)
+
+```
+
+
+¿Por qué necesito usar la coma después de 1:10? Es porque le estoy diciendo a R que seleccione las primeras 10 FILAS y todas las 104 COLUMNAS. Intentemos poner la coma primero:
+
+```{r 04_df5b, exercise=TRUE, exercise.lines=3, eval=F}
+
+# Selecciona solo las 10 primeras columnas
+w[,1:10]
+
+```
+
+
+```{r 04_df5b1, exercise=TRUE, exercise.lines=3, echo=F}
+
+# Selecciona solo las 10 primeras columnas
+reactable(w[,1:10], sortable = T, resizable = T, searchable = T, wrap = F)
+
+```
+
+En este segundo ejemplo, seleccionamos todas las 167 FILAS y solo las 10 primeras COLUMNAS.
+
+Ahora, ¿qué pasa si quiero seleccionar solo las primeras 5 filas y las primeras 3 columnas? 
+
+```{r 04_df5c, exercise=TRUE, exercise.lines=5, eval=F}
+
+# Selecciona las 5 primeras líneas y las
+# 3 primeras columnas
+w[1:5,1:3]
+
+```
+
+```{r 04_df5c1, exercise=TRUE, exercise.lines=5, echo=F}
+
+# Selecciona las 5 primeras líneas y las
+# 3 primeras columnas
+reactable(w[1:5,1:3], sortable = T, resizable = T, searchable = T, wrap = F)
+
+```
+
+
+Me muestra solo las primeras 5 filas y el nombre del país, el índice GINI y el tipo de régimen político.
+
+Ahora es tu turno:
+
+Selecciona las primeras siete filas y las cuatro primeras columnas:
+
+
+```{r 04_df5d-solution, eval=F}
+
+# Selecciona las 7 primeras filas 
+# y las 4 primeras columnas
+w[1:7,1:4]
+
+```
+
+```{r 04_df5da-solution, echo=F}
+
+# Selecciona las 7 primeras filas 
+# y las 4 primeras columnas
+reactable(w[1:7,1:4], sortable = T, resizable = T, searchable = T, wrap = F)
+
+```
+
+
+Tales ejemplos nos ayudan a aprender cómo funciona la indexación en R (y en la mayoría de los lenguajes de programación). Sin embargo, generalmente queremos seleccionar observaciones basadas en valores dados. Por ejemplo, quiero seleccionar solo las democracias plenas. Puedo usar una expresión lógica para hacerlo:
+
+```{r 04_df5e, exercise=TRUE, exercise.lines=3, eval=F}
+
+# Selecciona solamente "Democracias plenas" (Full Democ).
+w[w$dem_level4=="Full Democ",]
+
+```
+
+```{r 04_df5e1, exercise=TRUE, exercise.lines=3, echo=F}
+
+# Selecciona solamente "Democracias plenas" (Full Democ).
+reactable(w[w$dem_level4=="Full Democ",], sortable = T, resizable = T, searchable = T, wrap = F)
+
+```
+
+
+Ahora es tu turno. Selecciona solo los países con mayoría musulmana:
+
+```{r 04_df5f, exercise=TRUE, exercise.lines=3}
+
+
+```
+
+
+```{r 04_df5f-solution, echo=FALSE}
+
+# Selecciona solo países con 
+# mayoría musulmana.
+reactable(w[w$muslim=="Yes",], sortable = T, resizable = T, searchable = T, wrap = F)
+
+```
+
+```{r 04_df5f-solutio, eval=F}
+
+# Selecciona solo países con 
+# mayoría musulmana.
+w[w$muslim=="Yes",]
+
+```
+
+
+También podemos seleccionar columnas específicas. Ahora, seleccionemos aquellos países que son democracias completas y las columnas "country", "dem_level4", y "religoin":
+
+```{r 04_df5g, exercise=TRUE, exercise.lines=3, eval=F}
+
+# Selecciona Full democracies y variables elegidas.
+w[w$dem_level4=="Full Democ", c("country", "dem_level4", "religion")]
+
+```
+
+```{r 04_df5ga, exercise=TRUE, exercise.lines=3, echo=F}
+
+# Selecciona Full democracies y variables elegidas.
+reactable(w[w$dem_level4=="Full Democ", c("country", "dem_level4", "religion")], sortable = T, resizable = T, searchable = T, wrap = F)
+
+```
+
+
+Ahora es tu turno. Selecciona solo los países con mayoría musulmana y las columnas "country", "dem_level4", y "religoin":
+
+
+
+```{r 04_df5h-solution, eval=F}
+
+# Selecciona solamente mayoría musulmana y variables elegidas.
+w[w$muslim=="Yes", c("country", "dem_level4", "religion")]
+
+```
+
+```{r 04_df5ha-solution, echo=F}
+
+# Selecciona solamente mayoría musulmana y variables elegidas.
+reactable(w[w$muslim=="Yes", c("country", "dem_level4", "religion")], sortable = T, resizable = T, searchable = T, wrap = F)
+
+```
+
+
+Ahora, seleccionemos solo aquellos países de *w* que tienen datos sobre el índice GINI *gini10*). En R, los valores faltantes se representan como NA:
+
+
+```{r 04_df5i-solution, eval=F}
+
+# Selecciona solamente países con datos de Gini
+# en la base w .
+w[! is.na(w$gini10), ]
+
+```
+
+
+```{r 04_df5i-solution1, echo=F}
+
+# Selecciona solamente países con datos de Gini
+# en la base w .
+reactable(w[! is.na(w$gini10), ], sortable = T, resizable = T, searchable = T, wrap = F)
+
+```
+
+
+### Combinando data.frames
+
+En las secciones anteriores, aprendimos cómo filtrar datos en subgrupos. Ahora aprenderemos cómo unir diferentes conjuntos de datos en uno solo.
+
+Dividí el conjunto de datos *w* en cuatro subgrupos: *w1* con las primeras 83 filas, *w2* con las siguientes 84 filas, *wa* con algunas variables seleccionadas previamente, y *wb* con otras variables seleccionadas.
+
+**Juntando datos por fila**
+
+El primer método es simplemente poner un conjunto de datos sobre el otro. Este procedimiento solo funcionará si AMBOS conjuntos de datos tienen el mismo número de variables y los mismos nombres.
+
+La función empleada es rbind(df1,df2, ..., dfn). Revisa el ejemplo uniendo w1 y w2:
+
+```{r 04_df6b, exercise=TRUE, exercise.lines=4, eval=F}
+
+# Junta w1 y w2 por fila:
+rbind(w1,w2)
+
+```
+
+```{r 04_df6b1, exercise=TRUE, exercise.lines=4, echo=F}
+
+# Junta w1 y w2 por fila:
+reactable(rbind(w1,w2), sortable = T, resizable = T, searchable = T, wrap = F)
+
+```
+
+Como se puede ver, la tabla contiene 167 observaciones, igual que w, el conjunto de datos original. Si exploras los conjuntos de datos w1 y w2, verás que tienen 83 y 84 observaciones, respectivamente:
+
+```{r 04_df6c, exercise=TRUE, exercise.lines=10, eval=F}
+
+# Explora los datos de w1
+w1
+
+# Explora los datos de w2
+w2
+
+```
+
+```{r 04_df6c1, exercise=TRUE, exercise.lines=10, echo=F}
+
+# Explora los datos de w1
+reactable(w1, sortable = T, resizable = T, searchable = T, wrap = F)
+
+# Explora los datos de w2
+reactable(w2, sortable = T, resizable = T, searchable = T, wrap = F)
+
+```
+
+
+**Juntando datos por columna**
+
+En muchas ocasiones, nuestros datos están dispersos en diferentes archivos. Algunas variables de interés están en un archivo, mientras que otras están en otro. Antes de realizar cualquier análisis, necesitamos reunir todos los atributos en un solo conjunto de datos.
+
+Existen varias formas de combinar datos en R. Aquí, exploraremos la función canónica merge(). Con merge() puedes unir dos conjuntos de datos y establecer qué información conservas y cuál descartas.
+
+Antes de nada, exploremos los conjuntos de datos *wa* y *wb* usando head():
+
+```{r 04_df6d, exercise=TRUE, exercise.lines=10, eval=F}
+
+# Explora los datos de wa
+wa
+
+# Explora los datos de wb
+wb
+
+
+```
+
+```{r 04_df6d1, exercise=TRUE, exercise.lines=10, echo=F}
+
+# Explora los datos de wa
+reactable(wa, sortable = T, resizable = T, searchable = T, wrap = F)
+
+# Explora los datos de wb
+reactable(wb, sortable = T, resizable = T, searchable = T, wrap = F)
+
+
+```
+
+
+Como podemos ver, ambos conjuntos de datos tienen todos los países, pero las variables son diferentes, EXCEPTO por el país. El conjunto de datos *wa* contiene 5 columnas y *wb* otras 5. En este ejemplo, uniremos los conjuntos de datos *wa* y *wb*, usando la variable común "country" como clave para comparar ambos. El resultado esperado es un data.frame con 167 observaciones y 9 columnas (ya que "country" es la clave en *wa* y *wb*).
+
+
+```{r 04_df6e, exercise=TRUE, exercise.lines=6, eval=F}
+
+# fusiona wa y wb usando "country" como identificador común y 
+# manteniendo todos los valores de wa
+merge(wa,wb, by=c("country"), all=T)
+
+```
+
+```{r 04_df6e1, exercise=TRUE, exercise.lines=6, echo=F}
+
+# fusiona wa y wb usando "country" como identificador común y 
+# manteniendo todos los valores de wa
+reactable(merge(wa,wb, by=c("country"), all=T), sortable = T, resizable = T, searchable = T, wrap = F)
+
+```
+
+
+## Creación de indicadores
+
+### Abrir y Explorar los Datos
+
+El primer paso en cualquier análisis de datos es conocer tus datos. Por lo tanto, la acción inicial es abrir el conjunto de datos en R y entender qué representa cada variable y verificar si la información es consistente.
+
+Abramos y exploremos el conjunto de datos *edu_nacion.xlsx*:
+
+```{r 01_ind, exercise=TRUE, exercise.lines=10, eval=F}
+
+library(openxlsx)
+
+# Abre los datos tratados
+d <- read.xlsx("https://www.dropbox.com/s/orz8fdeg8as00fl/edu_nacion.xlsx?dl=1")
+
+# Examina los datos
+d
+
+```
+
+```{r 01_ind1, exercise=TRUE, exercise.lines=10, echo=F}
+
+library(openxlsx)
+
+# Abre los datos tratados
+d <- read.xlsx("https://www.dropbox.com/s/orz8fdeg8as00fl/edu_nacion.xlsx?dl=1")
+
+# Examina los datos
+reactable(d, sortable = T, resizable = T, searchable = T, wrap = F)
+
+```
+
+
+Los siguientes pasos iniciarán con algunas verificaciones clave para asegurar la calidad de los datos antes de comenzar cualquier transformación o análisis de datos. Debido a la naturaleza del conjunto de datos que estamos utilizando como ejemplo, nos centraremos aquí en tres tareas principales:
+
+**(a) Análisis de consistencia -** Verificar si los datos son correctos y eliminar ambigüedades y errores. En nuestro caso, verificaremos si una variable contiene solo un tipo de información o más y, si es más, corregiremos el problema.
+
+**(b) Unidades de observación -** Asegurarse de que todos los datos se midan en el mismo nivel, evitando comparaciones entre manzanas y naranjas.
+
+**(c) Creación de indicadores -** Generar la información adecuada para realizar nuestros análisis, ya que, en la mayoría de los casos, los conjuntos de datos originales no contienen la información exacta que necesitamos y se requiere un tratamiento previo.
+
+### Análisis de Consistencia
+
+**Todas las variables contienen solo UNA información o hay casos en los que las variables contienen más de una información?**
+
+Podemos ver que la variable *com_prov* es un desastre. Contiene espacios en blanco, el código de las Comunidades Autónomas o Provincias y los nombres de cada una de ellas. Hay dos tipos de información aquí: códigos y nombres. Lo primero es separar los dos.
+
+```{r 02_ind, exercise=TRUE, exercise.lines=17, eval=F}
+
+# 1) Elimina espacios em blanco con la función trimws()
+d$com_prov <- trimws(d$com_prov)
+
+# 2) Separa los códigos de los nombres con la función substr() 
+# para crear dos nuevas variables: code y name
+
+# Seleccionamos los dos primeros dígitos de com_prov para
+# el código de la provincia
+d$code <- substr(d$com_prov, 1,2)
+
+# Seleccionamos todos los demás caracteres a partir
+# del cuarto al último para encontrar el nombre de
+# las comunidades y provincias
+d$name <- substr(d$com_prov, 4,nchar(d$com_prov))
+
+# Examina los resultados
+d[,c("com_prov","code","name")]
+
+```
+
+```{r 02_ind1, exercise=TRUE, exercise.lines=17, echo=F}
+
+# 1) Elimina espacios em blanco con la función trimws()
+d$com_prov <- trimws(d$com_prov)
+
+# 2) Separa los códigos de los nombres con la función substr() 
+# para crear dos nuevas variables: code y name
+
+# Seleccionamos los dos primeros dígitos de com_prov para
+# el código de la provincia
+d$code <- substr(d$com_prov, 1,2)
+
+# Seleccionamos todos los demás caracteres a partir
+# del cuarto al último para encontrar el nombre de
+# las comunidades y provincias
+d$name <- substr(d$com_prov, 4,nchar(d$com_prov))
+
+# Examina los resultados
+reactable(d[,c("com_prov","code","name")], sortable = T, resizable = T, searchable = T, wrap = F)
+
+```
+
+### Unidades de Observación
+
+**¿Todas las observaciones están en la misma unidad?**
+
+No. Podemos ver que el conjunto de datos contiene información sobre Provincias y Comunidades Autónomas. Este es un problema porque estamos tratando con información que está agregada a diferentes niveles. No se pueden comparar. Necesitamos separar el conjunto de datos original en dos: uno para *Comunidades Autónomas* y otro para *Provincias*.
+
+Usaremos filtros para crear estos dos data.frames. Este ejercicio nos brinda una excelente oportunidad para entrenar nuestras nuevas habilidades en la selección de datos.
+
+```{r 03_ind, exercise=TRUE, exercise.lines=26, eval=F}
+
+## Segundo: separar diferentes unidades de observación
+
+# Separar CCAA de Provincias
+d$com_prov
+
+d$ccaa <- 0
+d$ccaa[c(1,10,14,16,18,21,23,33,39,44,48,51,56,58,60,62,66,68,70)] <- 1
+
+# Crea un nuevo objecto con los dados de las CC. AA.
+ca <- d[d$ccaa==1,]
+
+# Crea un nuevo objecto con los dados de las provincias
+pr <- d[d$ccaa==0,]
+
+### Reordena los datos para que sean fáciles de examinar
+ca <- ca[,c(20,21,2:19)]
+
+pr <- pr[,c(20,21,2:19)]
+
+# Examina los resultados
+ca
+pr
+
+```
+
+```{r 03_ind1, exercise=TRUE, exercise.lines=26, echo=F}
+
+## Segundo: separar diferentes unidades de observación
+
+# Separar CCAA de Provincias
+d$com_prov
+
+d$ccaa <- 0
+d$ccaa[c(1,10,14,16,18,21,23,33,39,44,48,51,56,58,60,62,66,68,70)] <- 1
+
+# Crea un nuevo objecto con los dados de las CC. AA.
+ca <- d[d$ccaa==1,]
+
+# Crea un nuevo objecto con los dados de las provincias
+pr <- d[d$ccaa==0,]
+
+### Reordena los datos para que sean fáciles de examinar
+ca <- ca[,c(20,21,2:19)]
+
+pr <- pr[,c(20,21,2:19)]
+
+# Examina los resultados
+reactable(ca, sortable = T, resizable = T, searchable = T, wrap = F)
+
+reactable(pr, sortable = T, resizable = T, searchable = T, wrap = F)
+
+```
+
+
+### Creación de Indicadores
+
+**¿Eres capaz de comparar los datos o necesitas calcular indicadores relativos?**
+
+Los datos originales se expresan en números absolutos. No tiene sentido decir que Madrid tiene 923,113 extranjeros en edad escolar mientras que Salamanca solo tiene 15,365. El tamaño total de sus poblaciones es diferente. Por lo tanto, es crucial calcular números relativos (proporciones, porcentajes o razones) para comparar provincias o Comunidades Autónomas.
+
+Puesto que este es un conjunto de datos sobre educación, queremos crear indicadores diversos que nos permitan comparar tanto provincias o Comunidades Autónomas como grupos sociales (residentes nacidos en España y extranjeros) en relación con este tema en particular.
+
+La primera cosa que necesitamos saber es cuántas personas con 15 años o más hay en total, para españoles y para extranjeros:
+
+
+```{r 04_ind, exercise=TRUE, exercise.lines=22, eval=F}
+
+# Totales
+
+# Total de personas con 15 años o más - población total
+pr$total_edu_val <- pr$total_edu-pr$tot_edu_no_apl
+
+# Total de personas con 15 años o más - Españoles
+pr$es_edu_val <- pr$total_edu_es-pr$es_edu_no_apl
+
+# Total de personas con 15 años o más - Extranjeros
+pr$ex_edu_val <- pr$total_edu_ex-pr$ex_edu_no_apl
+
+### Población nacida en el extranjero 
+
+# Porcentaje
+pr$p_foreign <- round(pr$total_edu_ex/pr$total_edu*100,1)
+
+# Ratio de extranjeros por español
+pr$rt_frgn_es <- round(pr$total_edu_ex/pr$total_edu_es,2)
+
+# Compara los resultados
+pr[,c("name","total_edu_val","es_edu_val","ex_edu_val","p_foreign",         
+      "rt_frgn_es")]
+
+```
+
+```{r 04_ind1, exercise=TRUE, exercise.lines=22, echo=F}
+
+# Totales
+
+# Total de personas con 15 años o más - población total
+pr$total_edu_val <- pr$total_edu-pr$tot_edu_no_apl
+
+# Total de personas con 15 años o más - Españoles
+pr$es_edu_val <- pr$total_edu_es-pr$es_edu_no_apl
+
+# Total de personas con 15 años o más - Extranjeros
+pr$ex_edu_val <- pr$total_edu_ex-pr$ex_edu_no_apl
+
+### Población nacida en el extranjero 
+
+# Porcentaje
+pr$p_foreign <- round(pr$total_edu_ex/pr$total_edu*100,1)
+
+# Ratio de extranjeros por español
+pr$rt_frgn_es <- round(pr$total_edu_ex/pr$total_edu_es,2)
+
+# Compara los resultados
+reactable(pr[,c("name","total_edu_val","es_edu_val","ex_edu_val","p_foreign",         
+      "rt_frgn_es")], sortable = T, resizable = T, searchable = T, wrap = F)
+
+```
+
+Una vez que tenemos estos números, podemos calcular los porcentajes de cada nivel educativo para la población total de 15 años o más.
+
+```{r 04_indb, exercise=TRUE, exercise.lines=17, eval=F}
+
+### Niveles educativos - población total
+
+# Primaria - Población total 15 o más
+pr$p_tot_edu_prim <- round(pr$tot_edu_prim/
+                             pr$total_edu_val*100,1)
+
+# Secundaria - Población total 15 o más
+pr$p_tot_edu_sec <- round((pr$tot_edu_prietp_sec+
+                             pr$tot_edu_segetp_sec)/
+                            pr$total_edu_val*100,1)
+
+# Universidad - Población total 15 o más
+pr$p_tot_edu_uni <- round(pr$tot_edu_sup/
+                            pr$total_edu_val*100,1)
+
+# Examina los resultados
+pr[,c("name","p_tot_edu_prim","p_tot_edu_sec","p_tot_edu_uni")]
+
+```
+
+```{r 04_indb1, exercise=TRUE, exercise.lines=17, echo=F}
+
+### Niveles educativos - población total
+
+# Primaria - Población total 15 o más
+pr$p_tot_edu_prim <- round(pr$tot_edu_prim/
+                             pr$total_edu_val*100,1)
+
+# Secundaria - Población total 15 o más
+pr$p_tot_edu_sec <- round((pr$tot_edu_prietp_sec+
+                             pr$tot_edu_segetp_sec)/
+                            pr$total_edu_val*100,1)
+
+# Universidad - Población total 15 o más
+pr$p_tot_edu_uni <- round(pr$tot_edu_sup/
+                            pr$total_edu_val*100,1)
+
+# Examina los resultados
+reactable(pr[,c("name","p_tot_edu_prim","p_tot_edu_sec","p_tot_edu_uni")], 
+          sortable = T, resizable = T, searchable = T, wrap = F)
+
+```
+
+Ahora, creamos los mismos porcentajes para la población nacida en España.
+
+
+```{r 05_ind, exercise=TRUE, exercise.lines=15, eval=F}
+
+### Niveles educativos - nacidos en España
+
+# Primaria - españoles 15 o más
+pr$p_es_edu_prim <- round(pr$es_edu_prim/pr$es_edu_val*100,1)
+
+# Secundaria - españoles 15 o más
+pr$p_es_edu_sec <- round((pr$es_edu_prietp_sec+pr$es_edu_segetp_sec)/pr$es_edu_val*100,1)
+
+# Universidad - españoles 15 o más
+pr$p_es_edu_uni <- round(pr$es_edu_sup/pr$es_edu_val*100,1)
+
+# Examina los resultados
+pr[,c("name","p_es_edu_prim","p_es_edu_sec","p_es_edu_uni")]
+
+```
+
+```{r 05_ind1, exercise=TRUE, exercise.lines=15, echo=F}
+
+### Niveles educativos - nacidos en España
+
+# Primaria - españoles 15 o más
+pr$p_es_edu_prim <- round(pr$es_edu_prim/pr$es_edu_val*100,1)
+
+# Secundaria - españoles 15 o más
+pr$p_es_edu_sec <- round((pr$es_edu_prietp_sec+pr$es_edu_segetp_sec)/pr$es_edu_val*100,1)
+
+# Universidad - españoles 15 o más
+pr$p_es_edu_uni <- round(pr$es_edu_sup/pr$es_edu_val*100,1)
+
+# Examina los resultados
+reactable(pr[,c("name","p_es_edu_prim","p_es_edu_sec","p_es_edu_uni")], sortable = T, resizable = T, searchable = T, wrap = F)
+
+```
+
+**Ejercicio 1**
+
+Repite el ejercicio y crea los porcentajes para la población nacida en el extranjero.
+
+
+```{r 06_ind, exercise=TRUE}
+
+```
+
+```{r 06_ind-solution, eval=F}
+
+### Niveles educativos - nacidos en el extranjero
+
+# Primaria - extranjero 15 o más
+pr$p_ex_edu_prim <- round(pr$ex_edu_prim/pr$ex_edu_val*100,1)
+
+# Secundaria - extranjero 15 o más
+pr$p_ex_edu_sec <- round((pr$ex_edu_prietp_sec+pr$ex_edu_segetp_sec)/pr$ex_edu_val*100,1)
+
+# Universidad - extranjero 15 o más
+pr$p_ex_edu_uni <- round(pr$ex_edu_sup/pr$ex_edu_val*100,1)
+
+# Examinemos los resultados
+pr[,c("name","p_ex_edu_prim","p_ex_edu_sec","p_ex_edu_uni")]
+
+```
+
+```{r 06_ind-solution1, echo=F}
+
+### Niveles educativos - nacidos en el extranjero
+
+# Primaria - extranjero 15 o más
+pr$p_ex_edu_prim <- round(pr$ex_edu_prim/pr$ex_edu_val*100,1)
+
+# Secundaria - extranjero 15 o más
+pr$p_ex_edu_sec <- round((pr$ex_edu_prietp_sec+pr$ex_edu_segetp_sec)/pr$ex_edu_val*100,1)
+
+# Universidad - extranjero 15 o más
+pr$p_ex_edu_uni <- round(pr$ex_edu_sup/pr$ex_edu_val*100,1)
+
+# Examinemos los resultados
+reactable(pr[,c("name","p_ex_edu_prim","p_ex_edu_sec","p_ex_edu_uni")], 
+          sortable = T, resizable = T, searchable = T, wrap = F)
+
+```
+
+
+**Ejercicio 2**
+
+Una vez que tenemos los datos para ambos grupos, con estas variables básicas, ¿qué otras variables o índices podrían calcularse a partir de los datos? Sugiere al menos dos.
+
+```{r 07_ind, exercise=TRUE}
+
+```
+
+```{r 07_ind-solution, eval=F}
+
+# ALGUNAS SUGERENCIAS:
+
+# Calcular la ratio entre nacidos en el extranjero 
+# y en España para cada nivel educativo. 
+
+# Tal ratio nos permitirá verificar el número de 
+# extranjeros por cada nacido en España para cada
+# nivel educativo. Números POR DEBAJO de 1
+# muestran que hay menos (nacidos) EXTRANJEROS que españoles
+# con ese nivel educativo. Números POR ENCIMA de 1
+# representan que hay más extranjeros que españoles.
+
+# Primaria
+pr$rt_pr <- round(pr$p_ex_edu_prim/pr$p_es_edu_prim,2)
+
+# Secundaria
+pr$rt_sc <- round(pr$p_ex_edu_sec/pr$p_es_edu_sec,2)
+
+# Universidad
+pr$rt_su <- round(pr$p_ex_edu_uni/pr$p_es_edu_uni,2)
+
+# La próxima variable mide el grado de 
+# desigualdad entre extranjeros y españoles
+# en cuanto a educación.
+pr$desv <- round(
+                  (
+                    abs(1-pr$rt_pr)+
+                    abs(1-pr$rt_sc)+
+                    abs(1-pr$rt_su)
+                    )/3,
+                  2)
+
+# Esta última variable normaliza la anterior
+# convirtiendo los valores a un rango de 0-1,
+# donde 0 representa total igualdad entre
+# extranjeros y españoles y 1 una desigualdad
+# absoluta entre ambos grupos.
+pr$n_desv <- round((pr$desv-min(pr$desv))/
+                     (max(pr$desv)-min(pr$desv)),2)
+
+# Examinemos los resultados
+pr[,c("name","rt_pr","rt_sc","rt_su","desv","n_desv")]
+
+```
+
+```{r 07_ind-solution1, echo=F}
+
+# ALGUNAS SUGERENCIAS:
+
+# Calcular la ratio entre nacidos en el extranjero 
+# y en España para cada nivel educativo. 
+
+# Tal ratio nos permitirá verificar el número de 
+# extranjeros por cada nacido en España para cada
+# nivel educativo. Números POR DEBAJO de 1
+# muestran que hay menos (nacidos) EXTRANJEROS que españoles
+# con ese nivel educativo. Números POR ENCIMA de 1
+# representan que hay más extranjeros que españoles.
+
+# Primaria
+pr$rt_pr <- round(pr$p_ex_edu_prim/pr$p_es_edu_prim,2)
+
+# Secundaria
+pr$rt_sc <- round(pr$p_ex_edu_sec/pr$p_es_edu_sec,2)
+
+# Universidad
+pr$rt_su <- round(pr$p_ex_edu_uni/pr$p_es_edu_uni,2)
+
+# La próxima variable mide el grado de 
+# desigualdad entre extranjeros y españoles
+# en cuanto a educación.
+pr$desv <- round(
+                  (
+                    abs(1-pr$rt_pr)+
+                    abs(1-pr$rt_sc)+
+                    abs(1-pr$rt_su)
+                    )/3,
+                  2)
+
+# Esta última variable normaliza la anterior
+# convirtiendo los valores a un rango de 0-1,
+# donde 0 representa total igualdad entre
+# extranjeros y españoles y 1 una desigualdad
+# absoluta entre ambos grupos.
+pr$n_desv <- round((pr$desv-min(pr$desv))/
+                     (max(pr$desv)-min(pr$desv)),2)
+
+# Examinemos los resultados
+reactable(pr[,c("name","rt_pr","rt_sc","rt_su","desv","n_desv")], 
+          sortable = T, resizable = T, searchable = T, wrap = F)
+
+```
+
+**Ejercicio 3 (en casa)**
+
+Repita el proceso que acabamos de terminar utilizando el conjunto de datos que contiene la información agregada a nivel de Comunidad Autónoma (*ca* data.frame).
+
+
+```{r 08_ind, exercise=TRUE}
+
+
+```
+
+```{r 08_ind-solution, eval=F}
+
+
+# Totales
+
+# Total 15 años o más - población total
+ca$total_edu_val <- ca$total_edu-ca$tot_edu_no_apl
+
+# Total 15 años o más - españoles
+ca$es_edu_val <- ca$total_edu_es-ca$es_edu_no_apl
+
+# Total 15 años o más - población extranjera
+ca$ex_edu_val <- ca$total_edu_ex-ca$ex_edu_no_apl
+
+### Extranjeros
+
+# Porcentaje
+ca$p_foreign <- round(ca$total_edu_ex/ca$total_edu*100,1)
+
+# Ratio Extranjeros/Español
+ca$rt_frgn_es <- round(ca$total_edu_ex/ca$total_edu_es,2)
+
+### Niveles educativos - población total
+
+# Primaria - población total 15 o más
+ca$p_tot_edu_prim <- round(ca$tot_edu_prim/
+                             ca$total_edu_val*100,1)
+
+# Secundaria - población total 15 o más
+ca$p_tot_edu_sec <- round((ca$tot_edu_prietp_sec+
+                             ca$tot_edu_segetp_sec)/
+                            ca$total_edu_val*100,1)
+
+# Universidad - población total 15 o más
+ca$p_tot_edu_uni <- round(ca$tot_edu_sup/
+                            ca$total_edu_val*100,1)
+
+### Educación - Españoles
+
+# Primaria - españoles 15 o más
+ca$p_es_edu_prim <- round(ca$es_edu_prim/ca$es_edu_val*100,1)
+
+# Secundaria - españoles 15 o más
+ca$p_es_edu_sec <- round((ca$es_edu_prietp_sec+ca$es_edu_segetp_sec)/ca$es_edu_val*100,1)
+
+# Universidad - españoles 15 o más
+ca$p_es_edu_uni <- round(ca$es_edu_sup/ca$es_edu_val*100,1)
+
+
+### Educación - Extranjeros
+
+# Primaria - extranjeros 15 o más
+ca$p_ex_edu_prim <- round(ca$ex_edu_prim/ca$ex_edu_val*100,1)
+
+# Secundaria - extranjeros 15 o más
+ca$p_ex_edu_sec <- round((ca$ex_edu_prietp_sec+ca$ex_edu_segetp_sec)/ca$ex_edu_val*100,1)
+
+# Universidad - extranjeros 15 o más
+ca$p_ex_edu_uni <- round(ca$ex_edu_sup/ca$ex_edu_val*100,1)
+
+# Examina los resultados
+ca
+
+```
+
+```{r 08_ind-solution1, echo=F}
+
+
+# Totales
+
+# Total 15 años o más - población total
+ca$total_edu_val <- ca$total_edu-ca$tot_edu_no_apl
+
+# Total 15 años o más - españoles
+ca$es_edu_val <- ca$total_edu_es-ca$es_edu_no_apl
+
+# Total 15 años o más - población extranjera
+ca$ex_edu_val <- ca$total_edu_ex-ca$ex_edu_no_apl
+
+### Extranjeros
+
+# Porcentaje
+ca$p_foreign <- round(ca$total_edu_ex/ca$total_edu*100,1)
+
+# Ratio Extranjeros/Español
+ca$rt_frgn_es <- round(ca$total_edu_ex/ca$total_edu_es,2)
+
+### Niveles educativos - población total
+
+# Primaria - población total 15 o más
+ca$p_tot_edu_prim <- round(ca$tot_edu_prim/
+                             ca$total_edu_val*100,1)
+
+# Secundaria - población total 15 o más
+ca$p_tot_edu_sec <- round((ca$tot_edu_prietp_sec+
+                             ca$tot_edu_segetp_sec)/
+                            ca$total_edu_val*100,1)
+
+# Universidad - población total 15 o más
+ca$p_tot_edu_uni <- round(ca$tot_edu_sup/
+                            ca$total_edu_val*100,1)
+
+### Educación - Españoles
+
+# Primaria - españoles 15 o más
+ca$p_es_edu_prim <- round(ca$es_edu_prim/ca$es_edu_val*100,1)
+
+# Secundaria - españoles 15 o más
+ca$p_es_edu_sec <- round((ca$es_edu_prietp_sec+ca$es_edu_segetp_sec)/ca$es_edu_val*100,1)
+
+# Universidad - españoles 15 o más
+ca$p_es_edu_uni <- round(ca$es_edu_sup/ca$es_edu_val*100,1)
+
+
+### Educación - Extranjeros
+
+# Primaria - extranjeros 15 o más
+ca$p_ex_edu_prim <- round(ca$ex_edu_prim/ca$ex_edu_val*100,1)
+
+# Secundaria - extranjeros 15 o más
+ca$p_ex_edu_sec <- round((ca$ex_edu_prietp_sec+ca$ex_edu_segetp_sec)/ca$ex_edu_val*100,1)
+
+# Universidad - extranjeros 15 o más
+ca$p_ex_edu_uni <- round(ca$ex_edu_sup/ca$ex_edu_val*100,1)
+
+# Examina los resultados
+reactable(ca, sortable = T, resizable = T, searchable = T, wrap = F)
+
+
+```
