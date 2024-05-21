@@ -11,7 +11,7 @@ format:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = T)
+knitr::opts_chunk$set(echo = T, message=FALSE, warning=FALSE)
 library(sortable)
 library(reactable)
 library(poliscidata)
