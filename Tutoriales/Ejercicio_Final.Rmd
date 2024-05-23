@@ -1,0 +1,162 @@
+---
+title: "\\<b>Ejercicio\\</b>\\<br>Conclusión"
+output: learnr::tutorial
+runtime: shiny_prerendered
+---
+
+```{r setup, include=FALSE}
+library(learnr)
+knitr::opts_chunk$set(echo = FALSE)
+library(learnrhash)
+library(sortable)
+
+library(poliscidata)
+
+set.seed(12345)
+w <- world[sample(1:nrow(world), 10),]
+w <- world
+
+
+
+```
+
+
+## Ejercicio final
+
+Este ejercicio final tiene como objetivo poner en práctica los conocimientos adquiridos en el curso. No se trata de una evaluación, sino de una oportunidad para que puedas practicar y reforzar lo aprendido. 
+
+Aunque se trate de un ejercicio, para la adquisición del certificado de finalización del curso, es necesario completarlo y enviar el hash generado al final del ejercicio a la dirección de correo electrónico: rodrodr@gmail.com .
+
+Para completar el ejercicio, sigue las instrucciones que se presentan a continuación.
+
+### Matemáticas con R
+
+Divide 100 por 50 utilizando el R.
+
+```{r exe1, exercise=TRUE, exercise.lines=4}
+
+```
+
+Eleva el número 2 a la 3ª potencia.
+
+```{r exe2, exercise=TRUE, exercise.lines=4}
+
+```
+
+
+
+### Vectores
+
+Crea un vector numérico llamado **x** con los valores 5, 3, 10, 2, 1, 7, 9, 4, 6, 8.
+
+```{r exe3, exercise=TRUE, exercise.lines=4}
+
+```
+
+Repite el ejercicio anterior, pero esta vez multiplica los valores por 5.
+
+```{r exe4, exercise=TRUE, exercise.lines=4}
+
+```
+
+Crea un vector de texto (character) llamado **sem**, con los nombres de los días de la semana.
+
+```{r exe5, exercise=TRUE, exercise.lines=4}
+
+```
+
+
+### Operadores lógicos
+
+
+Crea un vector numérico llamado **y** con los valores 5, 3, 10, 2, 1, 7, 9, 4, 6, 8. Luego, filtra solo los valores entre 3 y 7, ambos inclusive.
+
+```{r exe6, exercise=TRUE, exercise.lines=4}
+
+```
+
+
+Tenemos una variable con los nombres de las provincias de España llamada **prov**. Selecciona solo los nombres que empiecen por "A". Revisa la función substr() para poder hacerlo.
+
+```{r exe7, exercise=TRUE, exercise.lines=8}
+
+prov <- c("Almería", "Cádiz", "Córdoba", "Granada", "Huelva", "Jaén", "Málaga", "Sevilla", "Huesca", "Teruel", "Zaragoza", "Asturias", "Balears", "Palmas", "Santa Cruz de Tenerife", "Cantabria", "Ávila", "Burgos", "León", "Palencia", "Salamanca", "Segovia", "Soria", "Valladolid", "Zamora", "Albacete", "Ciudad Real", "Cuenca", "Guadalajara", "Toledo", "Barcelona", "Girona", "Lleida", "Tarragona", "Badajoz", "Cáceres", "A Coruña", "Lugo", "Ourense", "Pontevedra", "Madrid", "Murcia", "Navarra", "Araba", "Bizkaia", "Gipuzkoa", "La Rioja", "Ceuta", "Melilla", "Ávila", "Burgos", "León", "Palencia", "Salamanca", "Segovia", "Soria", "Valladolid", "Zamora", "Albacete", "Ciudad Real", "Cuenca", "Guadalajara", "Toledo", "Barcelona", "Girona", "Lleida", "Tarragona", "Badajoz", "Cáceres", "A Coruña", "Lugo", "Ourense", "Pontevedra", "Madrid", "Murcia", "Navarra", "Araba", "Bizkaia", "Gipuzkoa", "La Rioja", "Ceuta", "Melilla")
+
+# Selecciona solo las que empiecen por "A"
+
+
+```
+
+### data.frames
+
+Utiliza las variables **ps** con los nombres de los países de la Península Ibérica y **sp**, con sus superficies, para crear un data.frame llamado **iber** con dos columnas: pais y superficie.
+
+```{r exe8, exercise=TRUE, exercise.lines=10}
+
+# Crea un vector con los países de la Península Ibérica
+ps <- c("España", "Portugal", "Andorra")
+
+# Crea un vector con la superficie de los países de la Península Ibérica
+sp <- c(505992, 92212, 468)
+
+# Crea un data.frame llamado iber con los dos vectores anteriores y las columnas "pais" y "superficie"
+
+
+```
+
+Utiliza el data.frame **w** para seleccionar todos los países europeos (variable regionun).
+
+```{r exe9, exercise=TRUE, exercise.lines=4}
+
+```
+
+Seguimos con el data.frame **w**. Añade un indicador a la base w que muestre la razón entre la expectativa de las mujeres (**lifeex_f**) sobre la de los hombres (**lifeex_m**). Llama a esta variable **razon** (w$razon <- ???).
+
+```{r exe10, exercise=TRUE, exercise.lines=4}
+
+  
+```
+
+
+Según el patrón esperado de las estadísticas de mortalidad, la expectativa de vida de las mujeres debería ser mayor que la de los hombres. No obstante esto no siempre es así. Por lo tanto, repite el ejercicio anterior. Pero ahora, utiliza los resultados para seleccionar el nombre de los países en los que la expectativa de vida de las mujeres es menor que la de los hombres.
+
+Así que tendrás que:
+
+1. recrear la variable **razon** en el data.frame **w**.
+
+2. Utilizar la variable **razon** para seleccionar los países en los que la expectativa de vida de las mujeres es menor que la de los hombres.
+
+```{r exe11, exercise=TRUE, exercise.lines=8}
+
+```
+
+## Envía tu respuesta
+
+Para enviar su respuesta, ejecute el siguiente código y copie el hash generado. Envíe el hash a la dirección de correo electrónico:
+
+Deberás realizar tres tareas:
+
+1. Proporciona tu número de identificación. 
+
+2. Generar un hash con el contenido de tus respuestas.
+
+3. Copiar el hash y enviarlo a rodrodr@gmail.com.
+
+
+```{r 00_id}
+quiz(caption = "Identificación",
+  question("Digita tu DNI aquí:", type = "learnr_text", answer("", correct = T), correct = "Gracias!", incorrect = "Gracias!")
+)
+
+```
+
+```{r context="server"}
+learnrhash::encoder_logic()
+
+```
+
+```{r encode, echo=FALSE}
+
+learnrhash::encoder_ui("rodrodr@gmail.com")
+```
+
